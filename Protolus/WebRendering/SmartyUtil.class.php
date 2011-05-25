@@ -25,8 +25,10 @@
             $renderer->register_modifier('view_state', array('SmartyUtil', 'view_state'));
             $renderer->register_modifier('wrapper_variable', array('SmartyUtil', 'assign_wrapper_variable'));
             $renderer->register_function('json', array('SmartyUtil', 'json'));
+            $renderer->register_function('require', array('SmartyUtil', 'req'));
             $renderer->register_function('has_role', array('SmartyUtil', 'has_role'), false);
             $renderer->register_function('date', array('SmartyUtil', 'date'), false);
+            $renderer->register_function('form', array('SmartyUtil', 'form'), false);
             //$renderer->assign('language', Locale::getLanguageCode());
             return $renderer;
         }
@@ -53,6 +55,8 @@
             $renderer->register_function('convert', array('SmartyUtil', 'perform_conversion'), false);
             $renderer->register_function('json', array('SmartyUtil', 'json'));
             $renderer->register_modifier('view_state', array('SmartyUtil', 'view_state'));
+            $renderer->register_function('date', array('SmartyUtil', 'date'), false);
+            $renderer->register_function('form', array('SmartyUtil', 'form'), false);
             $renderer->assign('language', Locale::getLanguageCode());
             //return $renderer;
         }
@@ -62,7 +66,8 @@
                 $params = array("name"=>$params);
             }
             $panel = new Panel($params['name']);
-            return $panel->render();
+            $panel->parent = $smarty;
+            return $panel->render($params);
         }
     
         static function render_primitive($params, &$smarty){
@@ -93,13 +98,30 @@
                 }
             }
         }
+        
+        static function render_vars($string, &$smarty){
+            if(preg_match_all('~\[\[(.*)\]\]~', $string, $matches)){
+                foreach($matches[1] as $match){
+                    $parts = explode('.', $match);
+                    $parts = array_reverse($parts);
+                    $value = $smarty->get_template_vars(array_pop($parts));
+                    while(count($parts) > 0){
+                        $value = $value[array_pop($parts)];
+                    }
+                    $string = preg_replace('~\[\['.preg_replace('~\.~', '\.', $match).'\]\]~', $value, $string);
+                }
+            }
+            return $string;
+        }
     
+        //deprecated
         static function assign_wrapper_variable($params, &$smarty){
             if(!is_array($params)) $params = array('name'=>$params, 'value'=>$smarty);
             if(!isset($params['name']) || !isset($params['value'])) return; // nothing to do, input error!
             PageRenderer::$wrapper_variable_registry[$params['name']] = $params['value'];
         }
     
+        //deprecated
         static function assign_view_state($params, &$smarty){
             if(!is_array($params)) $params = array('name'=>$params, 'value'=>$smarty);
             if(!isset($params['name']) || !isset($params['value'])) return; // nothing to do, input error!
@@ -223,9 +245,10 @@
         }
     
         static function set_page_data($params, &$smarty){
-            if(isset($params['title'])) PageRenderer::$core_data['page_title'] = $params['title'];
-            if(isset($params['heading'])) PageRenderer::$core_data['page_heading'] = $params['heading'];
-            if(isset($params['meta'])) PageRenderer::$core_data['page_meta'] = $params['meta'];
+            if(isset($params['title'])) PageRenderer::$core_data['page_title'] = SmartyUtil::render_vars($params['title'], $smarty);
+            if(isset($params['heading'])) PageRenderer::$core_data['page_heading'] = SmartyUtil::render_vars($params['heading'], $smarty);
+            if(isset($params['meta_description'])) PageRenderer::$core_data['page_meta_description'] = SmartyUtil::render_vars($params['meta_description'], $smarty);
+            //if(isset($params['meta'])) PageRenderer::$core_data['page_meta'] = array_map(array('SmartyUtil', 'render_vars'), json_decode($params['meta']), array($smarty)); //JSON not legal in macro 
             if(isset($params['wrapper'])) PageRenderer::setWrapper($params['wrapper']);
         }
     
@@ -287,6 +310,22 @@
             if(isset($params['variable'])){
                 return json_encode($smarty->get_template_vars($params['variable']));
             }
+        }
+        
+        static function req($params, &$smarty){
+            $reqs = explode(',', $params['name']);
+            foreach($reqs as $req){
+                $req = trim($req);
+                ResourceBundle::req($req);
+            }
+        }
+        
+        static function form($params, &$smarty){
+            if( ($object = $smarty->get_template_vars($params['object'])) && is_object($object)){
+                return $object->HTML();
+            }
+            //echo('ACK!'.print_r($smarty->get_template_vars(), true));
+            exit();
         }
         
         static function oo($params, &$smarty){

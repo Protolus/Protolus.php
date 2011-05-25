@@ -8,6 +8,7 @@
     class Panel{
         public static $callStack = array();
         public static $fileExtension = 'panel.tpl';
+        public $parent = null;
         protected $name;
         public $silo;
         protected $rootDirectory = '.';
@@ -33,9 +34,14 @@
         
         public function data(){
             $renderer = new RendererDummy();
+            PageRenderer::$dataCall = true;
             $controller_location = $this->rootDirectory.'/Controllers/'.$this->name.'.controller.php';
-            require($controller_location);
-            return json_encode($renderer->data);
+            if(file_exists($controller_location)){
+                require($controller_location);
+                return json_encode($renderer->data);
+            }else{
+                return json_encode(new StdClass());
+            }
         }
         
         public static function extractProfile($panelContent){
@@ -61,6 +67,7 @@
         public function render($params = null){
             array_push(Panel::$callStack, $this);
             if($params == null) $params = $this->name;
+            if(PageRenderer::$root_panel == null) PageRenderer::$root_panel = $this->name;
             $renderer = SmartyUtil::newSmartyInstance();
             $renderer->template_dir = $this->rootDirectory.'Panels/';
             $testing_panel = false;
@@ -81,6 +88,36 @@
             $groups = array('default' => $params['name']);
             $ratios = isset($params['ratio']) ? array('default' => $params['ratio']) : array('default' => 1);
             $old_name  = $params['name'];
+            if(array_key_exists('variables', $params) && $this->parent != null){
+                $vars = explode(",", $params['variables']);
+                foreach($vars as $var){
+                    $renderer->assign($var, $this->parent->get_template_vars($var));
+                }
+            }
+            
+            if(array_key_exists('populate', $params) && $this->parent != null){
+                $pop_vars = explode(",", $params['populate']);
+                foreach($pop_vars as $pop_var){
+                    if(strpos($pop_var, '.') === false){
+                        $pop_var = $this->parent->get_template_vars($pop_var);
+                    }else{
+                        $can = $this->parent->get_template_vars(substr($pop_var, 0, strpos($pop_var, '.')));
+                        $rem = substr($pop_var, strpos($pop_var, '.')+1);
+                        while(strpos($rem, '.') !== false){
+                            echo($rem.', ');
+                            $can = $can[substr($rem, 0, strpos($rem, '.'))];
+                            $rem = substr($rem, strpos($rem, '.')+1);
+                        }
+                        if($rem != '') $can = $can[$rem];
+                        $pop_var = $can;
+                    }
+                    if(is_array($pop_var)){
+                        foreach($pop_var as $key=>$p_var){
+                            $renderer->assign($key, $p_var);
+                        }   
+                    }
+                }
+            }
             foreach($params as $index => $param){
                 if(substr($index, strlen($index) - 5) == '_test'){ //we found a test
                     $group = substr($index, 0, strlen($index) - 5);
@@ -150,12 +187,11 @@
                     }
                 }
                 $panel_location = $params['name'].'.'.Panel::$fileExtension;
-
                 $controller_end_time = microtime(true);
                 $controller_run_time = ($controller_end_time - $controller_start_time) * 1000;
                 $panel_render_start_time = microtime(true);
                 $rendered = '<div id="'.$params['name'].'_panel">'.$renderer->fetch($panel_location).'</div>';
-
+                
                 $panel_render_end_time = microtime(true);
                 $panel_render_run_time = ($panel_render_end_time - $panel_render_start_time) * 1000;
                 array_pop(Panel::$callStack);
@@ -213,7 +249,7 @@
                             $count++;
                         }
                     }
-                    //Logger::log($panel.' > preg_replace(\'~^'.$selector.'$~\', '.$replacement.', '.$panel.'); ->');
+                    Logger::log($panel.' > preg_replace(\'~^'.$selector.'$~\', '.$replacement.', '.$panel.'); ->');
                     $selector = preg_replace('~\#~', '([0-9]+)', $selector);
                     if($replacement == '#'){
                         $replacement = '$1';

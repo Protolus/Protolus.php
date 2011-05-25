@@ -14,7 +14,6 @@
             $this->database = 'tarrpitt_mysql';
             $this->tableName = self::$name;
             if($id != null){
-//                parent::__construct($id, $field);
                 
             } else { //init new one
                 

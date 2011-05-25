@@ -158,6 +158,82 @@
             }
         }
         
+        public static function getFieldOptions($field, $object){
+            ($comment = $object->option($field, 'comment'))?$comment:'';
+            ($identifier = $object->option($field, 'identifier'))?true:false;
+            ($required = $object->option($field, 'required'))?($required == 't'||$required == 'true'):false;
+            ($size = (int)$object->option($field, 'size'));
+            $options = array(
+                'comment' => $comment,
+                'identifier' => $identifier,
+                'required' => $required,
+                'size' => $size,
+            );
+            return $options;
+        }
+        
+        public static function HTMLField($column, $options, $object){
+            $description = $options['description'];
+            $identifier = $options['identifier'];
+            $default = $options['default'];
+            $obfuscated = $options['obfuscated'];
+            $required = $options['required'];
+            
+            $size = $options['size'];
+            $fieldType = strtolower($object->type($column));
+            switch($fieldType){
+                case 'binary' :
+                case 'integer' :
+                case 'float' :
+                case 'instant' :
+                case 'string' :
+                default :
+                    if($size < 256) $type = 'text';
+                    else $type = 'textarea';
+            }
+            if($identifier) $type = 'hidden';
+            $label = ucwords(preg_replace('~_~', ' ', $column));
+            if($obfuscated){
+                $type = 'password';
+                $html = '<label for="'.$column.'">'.$label.'</label><input name="'.$column.'" type="password"'.
+                        (($size)?' size="'.$size.'"':'').
+                        '></input>';
+            }else{
+                if($type == 'textarea'){
+                    $html = '<label for="'.$column.'">'.$label.'</label><textarea name="'.$column.'"'.
+                        (($size)?' size="'.$size.'"':'').
+                        '>'.(($value = $object->get($column))?' value="'.$value.'"':(($default)?' value="'.$default.'"':'')).'</textarea>';
+                }else{
+                    $html = ($type != 'hidden'?'<label for="'.$column.'">'.$label.'</label>':'').'<input name="'.$column.'" type="'.$type.'"'.
+                        (($value = $object->get($column))?' value="'.$value.'"':(($default)?' value="'.$default.'"':'')).
+                        (($size)?' size="'.$size.'"':'').
+                        '></input>';
+                }
+            }
+            return $html;
+        }
+        
+        public static function setMetaFields(&$object, $reason = 'object saved'){
+	        if(is_array($object)){ // it's an old-style array
+	            if($object->isNew) $object['creation_time'] = date("Y-m-d H:i:s");
+	            $object['modification_time'] = date("Y-m-d H:i:s");
+	            $object['modified_by'] = MySQLData::$user_id;
+	            //$object['last_update_reason'] = $reason;
+	        }else if(is_object($object)){ // it's a new-style object
+	            if($object->isNew) $object->set('creation_time', date("Y-m-d H:i:s"));
+	            $object->set('modification_time', date("Y-m-d H:i:s"));
+	            $object->set('modified_by', MySQLData::$user_id);
+	            //$object->set('last_update_reason', $reason);
+	        }else{
+	            throw new Exception("object is not an object or array, meta-information cannot be added.");
+	        }
+	    }
+
+	    public static function isMetaField($name){
+	        if(strtolower($name) != 'id' && in_array(strtolower($name), Data::$core_fields)) return true;
+	        else return false;
+	    }
+        
         //instance implementations
         public $cache = null;
         public $isNew = true;
@@ -183,6 +259,22 @@
             }else if($type = Data::$core_options[strtolower($column)]['type']){
                 return $type;
             }else return false;
+        }
+        
+        public function HTML($separator = '<br/>',  $column = false){
+            if($column){
+                //echo($column.']');
+                return Data::HTMLField($column, self::getFieldOptions($column, $this), $this);
+            }else{
+                $res = '<form>';
+                foreach(array_merge(Data::$core_fields, $this->fields) as $field){
+                    //echo($field.'|');
+                    $res .= Data::HTML($separator, $field).$separator;
+                }
+                $res .= '</form>';
+                return $res;
+            }
+            //todo: implement full form
         }
         
         public function option($column, $name){

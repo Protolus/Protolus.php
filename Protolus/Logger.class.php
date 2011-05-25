@@ -17,6 +17,7 @@ class Logger{
     public static $lastLogStack = null;
     public static $fileHandle = null;
     public static $timestamp = null;
+    public static $id = null;
     
     public static function getTraceSummary($trace, $index=0){
         $result = "";
@@ -41,26 +42,34 @@ class Logger{
         global $start_time;
         $backtrace = debug_backtrace();
         $index = 0;
-        
+        if(Logger::$id == null){
+            Logger::$id = uniqid();
+            Logger::log('+++ '.Logger::$id.' +++');
+        }
         //get class/function information
         if(isset($backtrace[$index-1])){
             if($backtrace[$index-1]['class']) $location = $backtrace[$index-1]['class'].'->'.$backtrace[$index-1]['function'];
             else $location = $backtrace[$index-1]['function'];
         }
         
-        //get the file information
+        //get the file information end(explode('',Logger::$logFile))
         if(isset($backtrace[$index])){
             $fileParts = explode('/', $backtrace[$index]['file']);
             $file = $fileParts[count($fileParts)-1].':'.$backtrace[$index]['line'];
         }
         $thisTime = Logger::processing_time($start_time);
         $textPrefix = '['.number_format($thisTime, 3).'s total, '.number_format($thisTime-Logger::$lastTime, 3).'s block]['.Logger::getTraceSummary($backtrace).']';
-        
-        if(isset($backtrace[$index])) $linePrefix = '<h4 style="font-size:10px; margin-bottom:-5px;"><b>'.Logger::getTraceSummary($backtrace).'</b></h4>[<b style="display:inline-block">['.number_format($thisTime, 3).'s total, '.number_format($thisTime-Logger::$lastTime, 3).'s block]</b>]';//$linePrefix = $location.'('.$file.') ';
+        if(is_array(Logger::$logFile)){
+            print_r(Logger::$logFile);
+            exit();
+        }
+        $phpsucks = explode('.', Logger::$logFile);
+        //get the file information end(explode('.', Logger::$logFile))
+        if(strtolower(end($phpsucks)) == 'html') $linePrefix = '<h4 style="font-size:10px; margin-bottom:-5px;"><b>'.Logger::getTraceSummary($backtrace).'</b></h4>[<b style="display:inline-block">['.number_format($thisTime, 3).'s total, '.number_format($thisTime-Logger::$lastTime, 3).'s block]</b>]';//$linePrefix = $location.'('.$file.') ';
         else{
             $fileParts = explode('/', $_SERVER['SCRIPT_FILENAME']);
             $script_file = $fileParts[count($fileParts)-1];
-            $linePrefix = '['.$script_file.']> ';
+            $linePrefix = $_SERVER['SERVER_SIGNATURE'].' - '.date('H:i:s,u').' - ['.number_format($thisTime-Logger::$lastTime, 3).'/'.number_format($thisTime, 3).'] - protolus - '.PageRenderer::$root_panel.' - '.Logger::$id.' - ';
         }
         Logger::$lastTime = $thisTime;
         
@@ -77,8 +86,12 @@ class Logger{
         }
         if(Logger::$logToUser) $location.'('.$file.') '.$text;
         if(Logger::$logFile != null){
-            if(Logger::$fileHandle == null && file_exists(dirname(Logger::$logFile))){
-                Logger::$fileHandle = fopen(Logger::$logFile, 'w');
+            if(Logger::$fileHandle == null){
+                if(!is_dir(dirname(Logger::$logFile))){
+                    //echo('making '.dirname(Logger::$logFile)); exit();
+                    mkdir(dirname(Logger::$logFile), 0777, true);
+                }
+                Logger::$fileHandle = fopen(Logger::$logFile, 'a');
             }
             if(file_exists(Logger::$logFile)) fwrite(Logger::$fileHandle, $linePrefix.$text.Logger::$EOL);
         }
@@ -96,6 +109,7 @@ class Logger{
     public static function shutdown(){
         if(Logger::$timestamp != null) Logger::log('Timestamp: '.DefaultTable::processing_time(Logger::$timestamp));
         fclose(Logger::$tempFile);
+        Logger::log('--- '.Logger::$id.' ---');
         //unlink(Logger::$tempFileName);
     }
     

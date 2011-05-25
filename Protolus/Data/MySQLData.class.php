@@ -91,27 +91,6 @@
 	        return $result;
 	    }
 	
-	    public static function setMetaFields(&$object, $reason = 'object saved'){
-	        if(is_array($object)){ // it's an old-style array
-	            if($object->isNew) $object['creation_time'] = date("Y-m-d H:i:s");
-	            $object['modification_time'] = date("Y-m-d H:i:s");
-	            $object['modified_by'] = MySQLData::$user_id;
-	            //$object['last_update_reason'] = $reason;
-	        }else if(is_object($object)){ // it's a new-style object
-	            if($object->isNew) $object->set('creation_time', date("Y-m-d H:i:s"));
-	            $object->set('modification_time', date("Y-m-d H:i:s"));
-	            $object->set('modified_by', MySQLData::$user_id);
-	            //$object->set('last_update_reason', $reason);
-	        }else{
-	            throw new Exception("object is not an object or array, meta-information cannot be added.");
-	        }
-	    }
-
-	    public static function isMetaField($name){
-	        if(strtolower($name) != 'id' && in_array(strtolower($name), Data::$core_fields)) return true;
-	        else return false;
-	    }
-	
 	   //TODO: experimental js function to stored procedure translator (func_name + src_hash) to perform a limited sort of distributed search on shards
         protected static function performSearch($subject, $predicate, $db){
 			$object = $subject['object'];
@@ -168,20 +147,6 @@
                 }
                 $this->firstSave = true;
             }
-        }
-        
-        public static function getFieldOptions($field, $object){
-            ($comment = $object->option($field, 'comment'))?$comment = 'COMMENT \''.$comment.'\'':$comment='';
-            ($identifier = $object->option($field, 'identifier'))?true:false;
-            ($required = $object->option($field, 'required'))?($required == 't'||$required == 'true'):false;
-            ($size = (int)$object->option($field, 'size'));
-            $options = array(
-                'comment' => $comment,
-                'identifier' => $identifier,
-                'required' => $required,
-                'size' => $size,
-            );
-            return $options;
         }
         
         public static function SQLType($column, $options, $object){

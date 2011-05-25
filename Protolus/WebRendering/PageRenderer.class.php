@@ -9,10 +9,12 @@ class PageRenderer{
     public static $enumeration_registry = array();
     public static $configuration_registry = array();
     private static $wrapper_variable_registry = array();
+    public static $component_registry = array();
     private static $ab_test_tracking_registry = array();
     private static $ab_test_conversion_registry = array();
-    private static $root_panel = null;
+    public static $root_panel = null;
     public static $debug = true;
+    public static $dataCall = false;
 
     public static $template_directory = './Templates';
     public static $compile_directory = './templates_c';
@@ -115,6 +117,7 @@ class PageRenderer{
     public static function data($panel=null, $silo=null){
         //set the correct output level to prevent notices:
         PageRenderer::supressOutput();
+        PageRenderer::$dataCall = true;
         if(isset($silo)) $pan = new Panel($panel, $silo);
         else $pan = new Panel($panel);
         $data = $pan->data();
@@ -187,8 +190,17 @@ class PageRenderer{
                 Logger::log('Loading '.$wrapper_controller);
                 require($wrapper_controller);
                 Logger::log('Finished loading '.$wrapper_controller);
+            }else{
+                PageRenderer::log('Wrapper '.PageRenderer::$wrapper.' contoller not found.');
             }
-            else PageRenderer::log('Wrapper '.PageRenderer::$wrapper.' contoller not found.');
+            $head = '';
+            foreach(PageRenderer::$component_registry as $component){
+                if(!array_key_exists($component, ResourceBundle::$packages)) throw('Required resource(\''.$component.'\') not found!');
+                $head .= (ResourceBundle::$packages[$component]->preloadResources());
+            }
+            $renderer->assign('head', $head);
+            $renderer->assign('render_time', number_format(Logger::processing_time($start_time), 3));
+            $renderer->assign('root_panel', PageRenderer::$root_panel);
             if(file_exists(PageRenderer::$wrapper_directory.'/'.PageRenderer::$wrapper.'.wrapper.tpl')){
                 $result = $renderer->fetch(PageRenderer::$wrapper.'.wrapper.tpl');
             }else{

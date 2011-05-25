@@ -57,6 +57,14 @@ class WebApplication{
         }
     }
     
+    public static function requireResource($name){
+        ResourceBundle::req($name);
+    }
+    
+    public static function domain(){
+        return  $_SERVER['SERVER_NAME'];
+    }
+    
     public static function url(){
         return 
             ($_SERVER['HTTPS'] == 'on'?'https':'http').
@@ -169,9 +177,10 @@ class WebApplication{
         return Session::$instance->get($name);
     }
 
-    public static function setCookie($name, $value, $expiry = null, $path='/'){
+    public static function setCookie($name, $value, $expiry = null, $path='/', $domain=null){
         if ($expiry == null) $expiry = time()+60*60*24*30;
-        return setcookie($name, $value, $expiry, $path, "", false, false);
+        if ($domain == null) $domain = WebApplication::getConfiguration('application.cookie_domain');
+        return setcookie($name, $value, $expiry, $path, $domain, false, false);
     }
 
     public static function getCookie($name){
@@ -209,12 +218,14 @@ class WebApplication{
     }
     
     public static function redirect($location){
-        echo($location."<br/>\n");
-        if(strpos($location, '://') !== false){ //has protocol
-        }else{
-            if(substr($location, 0, 1) != '/') $location = '/'.$location;
+        if(!PageRenderer::$dataCall){ //if this is a data call redirecting would be bad form
+            echo($location."<br/>\n");
+            if(strpos($location, '://') !== false){ //has protocol
+            }else{
+                if(substr($location, 0, 1) != '/') $location = '/'.$location;
+            }
+            WebApplication::addHeader('Location: '.$location);
         }
-        WebApplication::addHeader('Location: '.$location);
     }
 
     public static function get($key, $include_client_data = true){
