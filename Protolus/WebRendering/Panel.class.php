@@ -38,7 +38,7 @@
             $controller_location = $this->rootDirectory.'/Controllers/'.$this->name.'.controller.php';
             if(file_exists($controller_location)){
                 require($controller_location);
-                return json_encode($renderer->data);
+                return json_encode(array_merge($renderer->data, PageRenderer::$core_data));
             }else{
                 return json_encode(new StdClass());
             }
@@ -190,7 +190,7 @@
                 $controller_end_time = microtime(true);
                 $controller_run_time = ($controller_end_time - $controller_start_time) * 1000;
                 $panel_render_start_time = microtime(true);
-                $rendered = '<div id="'.$params['name'].'_panel">'.$renderer->fetch($panel_location).'</div>';
+                $rendered = $renderer->fetch($panel_location);
                 
                 $panel_render_end_time = microtime(true);
                 $panel_render_run_time = ($panel_render_end_time - $panel_render_start_time) * 1000;
@@ -226,10 +226,22 @@
             foreach($conf as $silo => $rules){
                 foreach($rules as $selector => $replacement){
                     //try{
-                    if(strtolower($selector) == '%'){
+                    /*if(strtolower($selector) == '%'){
                         if(Panel::isDefined($panel)) continue;
                         else $selector = '*';
                     }
+                    if(strpos($selector, '%')){
+                        if(Panel::isDefined($panel)) continue;
+                        else $selector = str_replace('%', '*', $selector);
+                    }*/
+                    if(strpos($selector, '%') !== false){
+                        if(Panel::isDefined($panel)) continue;
+                        $selector = str_replace('%', '*', $selector);
+                    }
+                    /*if(strtolower($selector) == '%'){
+                        if(Panel::isDefined($panel)) continue;
+                        $selector = '*';
+                    }*/
                     $count = 1;
                     if(strpos($selector, ':')){ //if there's a colon, check if we're a range
                         if(preg_match('~^(.*):([ ,0-9]*)$~', $selector, $matches)){

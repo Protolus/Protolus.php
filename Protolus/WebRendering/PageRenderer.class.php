@@ -177,14 +177,14 @@ class PageRenderer{
         for($lcv = 0; $lcv < $depth; $lcv++) $path_prefix .= '../';
         if(isset($silo)) $pan = new Panel($panel, $silo);
         else $pan = new Panel($panel);
-        $result = '<div id="'.$panel.'">'.$pan->render().'</div>';
+        $result = $pan->render();
         if(PageRenderer::$wrapper != null){
             $renderer = SmartyUtil::newSmartyInstance();
             $renderer->template_dir = PageRenderer::$wrapper_directory;
             //$renderer->assign('ab_trackers', PageRenderer::$ab_test_tracking_registry);
             //$renderer->assign('ab_conversions', PageRenderer::$ab_test_conversion_registry);
             foreach(PageRenderer::$core_data as $key=>$data) $renderer->assign($key, $data);
-            $renderer->assign('content', $result);
+            $renderer->assign('content', '<div id="protolus_root">'.$result.'</div>');
             $wrapper_controller = PageRenderer::$wrapper_controller_directory.'/'.PageRenderer::$wrapper.'.controller.php';
             if(file_exists($wrapper_controller)){
                 Logger::log('Loading '.$wrapper_controller);
@@ -194,9 +194,13 @@ class PageRenderer{
                 PageRenderer::log('Wrapper '.PageRenderer::$wrapper.' contoller not found.');
             }
             $head = '';
-            foreach(PageRenderer::$component_registry as $component){
-                if(!array_key_exists($component, ResourceBundle::$packages)) throw('Required resource(\''.$component.'\') not found!');
-                $head .= (ResourceBundle::$packages[$component]->preloadResources());
+            if(ResourceBundle::$merge){
+                $head = ResourceBundle::combineAllResources();
+            }else{
+                foreach(PageRenderer::$component_registry as $component){
+                    if(!array_key_exists($component, ResourceBundle::$packages)) throw('Required resource(\''.$component.'\') not found!');
+                    $head .= (ResourceBundle::$packages[$component]->preloadResources());
+                }
             }
             $renderer->assign('head', $head);
             $renderer->assign('render_time', number_format(Logger::processing_time($start_time), 3));
@@ -206,6 +210,8 @@ class PageRenderer{
             }else{
                PageRenderer::log('Wrapper '.PageRenderer::$wrapper.' not found.');
             }
+        }else{
+            $result = '<div id="'.$panel.'">'.$result.'</div>';
         }
         PageRenderer::revertOutput();
 		if(!PageRenderer::$return_mode){

@@ -13,7 +13,7 @@
             }
         }
         
-        protected static function loadFile($file, $type='conf'){
+        public static function loadFile($file, $type='conf'){
             if(!array_key_exists($type, Formats::$registry)) Formats::$registry[$type] = array();
             $result = false;
             switch($type){

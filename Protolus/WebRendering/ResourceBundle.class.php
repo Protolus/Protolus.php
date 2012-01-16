@@ -2,6 +2,10 @@
     class ResourceBundle{
         public static $packages = null;
         public static $minify = true;
+        public static $integratedMinify = true;
+        public static $merge = true;
+        public static $hardcodedVersion = '101';
+                  
         
         public $resources = null;
         public $dependencies = null;
@@ -11,6 +15,90 @@
         
         public static function startup(){
         
+        }
+        
+        public static function combineAllResources(){
+            $allResources = array();
+            foreach(ResourceBundle::$packages as $name => $component){
+                foreach($component as $item){
+                    $allResources[] = '/Resources/'.$name.'/'.$item;
+                }
+            }
+            if(ResourceBundle::$integratedMinify){
+                $resourceString = implode('-', ResourceBundle::resources());
+                if(ResourceBundle::$minify){
+                    return '<link origin="protolus" resource="'.$resourceString.'" rel="stylesheet" href="/style/min/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />
+                    <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/min/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                }else{
+                    return '<link origin="protolus" resource="'.$resourceString.'" rel="stylesheet" href="/style/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />
+                    <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                }
+            }else{
+                return ResourceBundle::packageResources(ResourceBundle::allResourceItems(true), ResourceBundle::resources());
+            }
+        }
+        
+        public static function resources($fullPath=false){
+            return array_keys(ResourceBundle::$packages);
+        }
+        
+        public static function allResourceItems($fullPath=false){
+            $allResources = array();
+            foreach(ResourceBundle::$packages as $name => $component){
+                $allResources = array_merge($allResources, $component->resourceItems($fullPath));
+            }
+            return $allResources;
+        }
+        
+        public static function packageResources($resources, $names){ //load from head
+            if(is_array($names)) $names = implode(',', $names);
+            $include = '';
+            if(ResourceBundle::$minify){
+                $paths = array();
+                $styles = array();
+                foreach($resources as $resource){
+                    $parts = explode('.', $resource);
+                    $end = end($parts);
+                    $type = strtolower(trim($end));
+                    if($type == 'js') $paths[] = $resource;
+                    else $styles[] = $resource;
+                }
+                if(count($paths) == 0) throw new Exception('no resources to include for '.$names.' : '.print_r($resources, true));
+                if(count($paths) == 1){
+                    $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="/min/?f='.$paths[0].'&amp;version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                }else{
+                    $commonPrefix = ResourceBundle::commonPath($paths);
+                    $cleanPaths = array();
+                    foreach($paths as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
+                    $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="/min/?f='.implode(',', $paths).'&amp;version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                }
+                if(count($styles) != 0){
+                    if(count($styles) == 1){
+                        $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="/min/?f='.$styles[0].'&amp;version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                    }else{
+                        $commonPrefix = ResourceBundle::commonPath($styles);
+                        $cleanPaths = array();
+                        foreach($styles as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
+                        $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="/min/?b='.substr($commonPrefix, 1,-1).'&amp;f='.implode(',', $cleanPaths).'&amp;version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                    }
+                }
+            }else{
+                foreach($resources as $path){
+                    $parts = explode('.', $path);
+                    $end = end($parts);
+                    $type = strtolower($end);
+                    if(file_exists($path.'.min')) $path = $path.'.min'; //todo: handle this in merge mode (above)
+                    switch($type){
+                        case 'js':
+                            $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="'.$path.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                            break;
+                        case 'css':
+                            $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="'.$path.'?version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                            break;
+                    }
+                }
+            }
+            return $include;
         }
         
         public function __construct($name, $options){
@@ -41,7 +129,7 @@
             ResourceBundle::$packages[$this->name] = $this;
         }
         
-        public function commonPath($stringArray){
+        public static function commonPath($stringArray){
             $longest = '';
             if(count($stringArray) == 0) return false;
             $parts = explode('/', $stringArray[0]);
@@ -54,41 +142,32 @@
             return $longest;
         }
         
+        public function resourceItems($fullPath=false){
+            $result = array();
+            foreach($this->resources as $name => $component){
+                //foreach($component as $item){
+                    if($fullPath){
+                        $result[$name] = '/Resources/'.$this->name.'/'.$component;
+                    }else{
+                        $result[$name] = $component;
+                    }
+                //}
+            }
+            //print_r($result);
+            return $result;
+        }
+        
         public function preloadResources(){ //load from head
             $include = '<!-- [RESOURCE:'.$this->name.'] -->'."\n";
-            if(ResourceBundle::$minify){
-                $paths = array();
-                foreach($this->resources as $resource) $paths[] = '/Resources/'.$this->name.'/'.$resource;
-                //print_r($this->resources); print_r($paths); echo('['.$this->name.']'); exit();
-                if(count($paths) == 0) throw new Exception('no resources to include for '.$this->name.' : '.print_r($this, true));
-                if(count($paths) == 1){
-                    $include .= '<script origin="protolus" type="text/javascript" src="/min/?f='.$paths[0].'&amp;version=3"></script>'."\n";
-                }else{
-                    $commonPrefix = $this->commonPath($paths);
-                    $cleanPaths = array();
-                    foreach($paths as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
-                    $include .= '<script origin="protolus" type="text/javascript" src="/min/?b='.substr($commonPrefix, 1,-1).'&amp;f='.implode(',', $cleanPaths).'&amp;version=1"></script>'."\n";
-                }
+            if($integratedMinify){
+                    $include .= '<script origin="protolus" resource="'.$this->name.'" type="text/javascript" src="/javascript/'.$this->name.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
             }else{
-                foreach($this->resources as $resource){
-                    $parts = explode('.', $resource);
-                    $end = end($parts);
-                    $type = strtolower($end);
-                    $path = '/Resources/'.$this->name.'/'.$resource;
-                    if(file_exists($path.'.min')) $path = $path.'.min';
-                    switch($type){
-                        case 'js':
-                            $include .= '<script origin="protolus" type="text/javascript" src="'.$path.'?version=1"></script>'."\n";
-                            break;
-                        case 'css':
-                            $include .= '<link origin="protolus" rel="stylesheet" href="'.$path.'?version=1" type="text/css" />'."\n";
-                            break;
-                    }
-                }
+                $include .= $this->packageResources($this->resourceItems(true), $this->name);
             }
             $include .= '<!-- [/RESOURCE:'.$this->name.'] -->'."\n";
             return $include;
         }
+        
         public function postloadResources(){ //load from body
             foreach($this->resources as $resource){
                 $include = '';

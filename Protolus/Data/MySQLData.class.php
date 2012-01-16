@@ -92,7 +92,8 @@
 	    }
 	
 	   //TODO: experimental js function to stored procedure translator (func_name + src_hash) to perform a limited sort of distributed search on shards
-        protected static function performSearch($subject, $predicate, $db){
+        protected static function performSearch($subject, $predicate, $db, $returnFields=array()){
+            if(is_string($returnFields)) $returnFields = explode(',', $returnFields);
 			$object = $subject['object'];
             $dummyObject = new $subject['object'];
 			$tableName = $dummyObject->tableName;
@@ -102,7 +103,8 @@
                 $discText = array();
                 foreach($discriminants as $discriminant){
 					$key = $discriminant[0];
-					if(!in_array($key, $dummyObject->fieldList) && ! MySQLData::isMetaField($key)) continue;
+					//echo('[D:'.$object.':'.print_r($discriminant, true).', '.print_r($dummyObject::$fields, true).']');
+					if(!in_array($key, $dummyObject::$fields) && ! MySQLData::isMetaField($key)) continue;
 					$value = $discriminant[2];
 					if(is_string($value) && (substr($discriminant[2], 0, 1) != '\'' && substr($discriminant[2], strlen($discriminant[2])-1, 1) != '\'')){
 					   $value = "'$value'";
@@ -110,7 +112,7 @@
                     $discText[] = $key.' '.trim($discriminant[1]).' '.$value;
                 }
 				$whereClause = implode(' and ', $discText);
-				$sql = MySQLData::buildSelectionStatement( $tableName, $whereClause);
+				$sql = MySQLData::buildSelectionStatement( $tableName, $whereClause, $returnFields);
                 $res = MySQLData::executeSQL($sql);
 				foreach($res as $row){
 	                $results[] = $row;	
@@ -212,14 +214,17 @@
 				}
 			}
             $this->data[$this->primaryKey] = $id;
-			$whereClause = $this->primaryKey . "=" . $id;
+			$whereClause = $this->primaryKey . "='" . $id . "'";
 			$sql = MySQLData::buildSelectionStatement( $this->tableName, $whereClause);
-			
             $res = MySQLData::executeSQL($sql, $this);
 
 			if(count($res) == 1){
 				$row = $res[0];
-			    $this->data = $row;
+				//echo('RESULTS');
+				//print_r($row);
+			    //$this->data = $row;
+			    //echo('[A:'.$this->get('advertiser_id').']');
+			    return $row;
             }else{
                 unset($this->data[$this->primaryKey]); //if there's no data, this row does not exist -> unset primary key
                 throw new Exception('MySQLData: Primary key not valid('.$selector.').');
@@ -229,23 +234,31 @@
         
         protected function performSave(){
 			MySQLData::setMetaFields($this, 'saved object');
-            if(!$this->isNew){
+			
+            if(!$this->get($this->primaryKey)){
 	            //new object
-	            MySQLData::executeSQL(MySQLData::buildInsertSQLFromObject($this), $this);
+	            //echo('NEW');
+	            $sql = MySQLData::buildInsertSQLFromObject($this);
+	            //echo('NEW SQL: '.$sql);
+	            MySQLData::executeSQL($sql, $this);
 	            $id = mysql_insert_id();
 	            $this->set($this->primaryKey, $id);
 	        }else{
 	            //updated object
-	            MySQLData::executeSQL(MySQLData::buildUpdateSQLFromObject($this), $this);
+	            $sql = MySQLData::buildUpdateSQLFromObject($this);
+	            //echo('OLD SQL: '.$sql);
+	            MySQLData::executeSQL($sql, $this);
+	            //echo('OLD');
 	        }
         }
 
 	    //static selection statement builder for getData, getObjects
-	    protected static function buildSelectionStatement( $tableName, $whereClause, $orderClause, $limitClause, $calcRows = false ){
+	    protected static function buildSelectionStatement( $tableName, $whereClause, $returnFields=array(), $orderClause, $limitClause, $calcRows = false ){
+	        $fieldSelector = (count($returnFields) == 0?'*':implode($returnFields, ','));
 	        if( $calcRows ) {
-	            $statement = 'SELECT SQL_CALC_FOUND_ROWS * FROM '.$tableName;
+	            $statement = 'SELECT SQL_CALC_FOUND_ROWS '.$fieldSelector.' FROM '.$tableName;
 	        } else {
-	            $statement = 'SELECT * FROM '.$tableName;
+	            $statement = 'SELECT '.$fieldSelector.' FROM '.$tableName;
 	        }
 
 	        $seperator = ' WHERE ';
@@ -309,10 +322,10 @@
 	                if($sep == '') $sep = ', ';
 	            }
 	        }
-	        foreach (MySQLData::$metafields as $name) {
+	        foreach (MySQLData::$core_fields as $name) {
 	            if ((isset($array[$name])) && ($primaryKey != $name) && ($automatic != $name)) { // don't update the primary key
 	                Logger::log($name);
-	                if(!($name == 'creation_time' && isset($array[$primaryKey]))){
+	                if(!(($name == 'creation_time' ||$name == 'created_at') && isset($array[$primaryKey]))){
 	                    if (get_magic_quotes_gpc()) {
 	                        $value = stripslashes($array[$name]);
 	                    } else {
@@ -337,7 +350,9 @@
 			if($key != null){
 				$array[$primaryKey] = $key;
 			}
+			//echo('FL:'.print_r($fieldList, true));
 	        foreach ($array as $name=>$value) {
+	           //echo('['.$name.(in_array($name, $fieldList)).' : '.MySQLData::isMetaField($name).' : '.($primaryKey != $name || $key != null).' : '.($name!=$automatic).']');
 	            if( ((in_array($name, $fieldList)) || MySQLData::isMetaField($name)) && ($primaryKey != $name || $key != null) && ($name!=$automatic)){
 	                if (get_magic_quotes_gpc()) {
 	                    $value = stripslashes($array[$name]);
@@ -357,15 +372,20 @@
 	        return $statement;
 	    }
 	    public static function buildUpdateSQLFromObject($object){ //convienience method for working with objects
-	        return MySQLData::buildUpdateSQLFromArray($object->data, $object->tableName, $object->fields, $object->primaryKey, $object->automatic);
+	       $class = get_class($object);
+	       $fields = $class::$fields;
+	        return MySQLData::buildUpdateSQLFromArray($object->data, $object->tableName, array_merge(Data::$core_fields, $fields), $object->primaryKey, $object->automatic);
 	    }
 
 	    public static function buildInsertSQLFromObject($object){ //convienience method for working with objects
-	        return MySQLData::buildInsertSQLFromArray($object->data, $object->tableName, $object->fields, $object->primaryKey, $object->automatic, $object->newKey);
+	       $class = get_class($object);
+	       $fields = $class::$fields;
+	        return MySQLData::buildInsertSQLFromArray($object->data, $object->tableName, array_merge(Data::$core_fields, $fields), $object->primaryKey, $object->automatic, $object->newKey);
 	    }
 	
 	    public static function executeSQL($statement, $requestingObject, $database=null, $depth=0){
 	        // /*  <- uncomment to shut off queries and output SQL
+	        //echo('{SQL:'.$statement.'}');
 	        if(MySQLData::$debug){
 	            Logger::log($statement.'<br/>');
 	            $start = Logger::processing_time();
@@ -399,7 +419,7 @@
 		        if(MySQLData::$mysql_iMode) while ($row = mysqli_fetch_assoc($SQLResult) ) $results[] = $row;
 		        else while($row = mysql_fetch_assoc($SQLResult) ) $results[] = $row;
 	            if(MySQLData::$debug){
-	                $time = MySQLData::processing_time($start);
+	                $time = Logger::processing_time($start);
 	                Logger::log('Query has '.count($results).' results in '.$time.' seconds.<br/>');
 	            }
 	            if(MySQLData::$mysql_iMode){

@@ -36,9 +36,11 @@
             $quoteChars = array('\'', '"');
             $breakingChars = array(' ', '=', '>', '<', '!');
             for($lcv=0; $lcv<strlen($whereClause); $lcv++){
+                //echo('['.$whereClause[$lcv].', '.$quotation.', '.print_r($results, true).', '.print_r($result, true).']');
                 if($inQuote){
                     if($whereClause[$lcv] == $quoteChar){ //close a quote
                         $result[sizeof($result)-1] .= '\''.$quotation.'\'';
+                        //echo('{OUT:'.print_r($result, true).'}');
                         $inQuote = false;
                         $quotation = '';
                     }else{
@@ -65,6 +67,7 @@
                     }
                     if(in_array($whereClause[$lcv], $quoteChars)){ //open a quote
                         $quoteChar = $whereClause[$lcv];
+                        //echo('{IN}');
                         $inQuote = true;
                         $quotation = '';
                     }else{
@@ -72,6 +75,7 @@
                     }
                 }
             }
+            if($quotation != '') $result[2] = $quotation;
             $results[] = $result;
             return $results;
         }
@@ -115,7 +119,8 @@
         }
         
         protected function checkInitialization(){
-            if( !isset($this->data[$this->primaryKey]) || empty($this->data[$this->primaryKey]) ){
+            //hacking away
+            /*if( !isset($this->data[$this->primaryKey]) || empty($this->data[$this->primaryKey]) ){
                 switch($this->key_type){
                     //generate a UUID for the object
                     case 'uuid':
@@ -126,10 +131,22 @@
                         break;
                 }
                 $this->firstSave = true;
-            }
+            }*/
         }
         
-        public static function search($datatype, $query=null){
+        public static function search($datatype, $query=null, $fields=array()){
+            $resultSet = Data::query($datatype, $query, $fields);
+            $results = array();
+            foreach($resultSet as $result){
+                $object = new $datatype();
+                $object->setData($result);
+                $object->firstSave = false;
+                $results[] = $object;
+            }
+            return $results;
+        }
+        
+        public static function query($datatype, $query=null, $fields=array()){
             if(is_string($query)){
                 $search = Data::parseWhere($query);
             }else{
@@ -144,15 +161,8 @@
                 $resultSet = $datatype::performSearch(array(
                     'type'=>$datatype,
                     'object'=>$datatype
-                ), $search, Data::$registry[$dummy->database]);
-                $results = array();
-                foreach($resultSet as $result){
-                    $object = new $datatype();
-                    $object->setData($result);
-                    $object->firstSave = false;
-                    $results[] = $object;
-                }
-                return $results;
+                ), $search, Data::$registry[$dummy->database], $fields);
+                return $resultSet;
             }else{
                 return array();
             }
@@ -163,12 +173,23 @@
             ($identifier = $object->option($field, 'identifier'))?true:false;
             ($required = $object->option($field, 'required'))?($required == 't'||$required == 'true'):false;
             ($size = (int)$object->option($field, 'size'));
+            ($hidden = $object->option($field, 'hidden'));
+            ($object_type = $object->option($field, 'object_type'));
+            ($query = $object->option($field, 'query'));
+            ($readonly = $object->option($field, 'readonly'));
+            ($type = $object->option($field, 'type'));
             $options = array(
                 'comment' => $comment,
                 'identifier' => $identifier,
                 'required' => $required,
                 'size' => $size,
+                'hidden' => $hidden,
+                'readonly' => $readonly,
+                'object_type' => $object_type,
+                'query' => $query,
+                'type' => $type
             );
+            if($position = $object->option($field, 'position')) $options['position'] = $position;
             return $options;
         }
         
@@ -177,52 +198,87 @@
             $identifier = $options['identifier'];
             $default = $options['default'];
             $obfuscated = $options['obfuscated'];
+            $hidden = $options['hidden'];
+            $readOnly = $options['readonly'];
             $required = $options['required'];
-            
             $size = $options['size'];
+            $object_type = $options['object_type']?$options['object_type']:'';
+            $query = $options['query']?$options['query']:'1';
+            $class = $options['class'];
             $fieldType = strtolower($object->type($column));
+            //echo('['.$column.' : '.$fieldType.':'.print_r($options, true).']');
             switch($fieldType){
                 case 'binary' :
                 case 'integer' :
                 case 'float' :
                 case 'instant' :
+                    $class = 'date_select';
+                    $type = 'text';
+                    break;
                 case 'string' :
+                case 'link' :
+                    $type = 'link';
+                    break;
                 default :
                     if($size < 256) $type = 'text';
                     else $type = 'textarea';
             }
-            if($identifier) $type = 'hidden';
+            if($identifier || $hidden) $type = 'hidden';
             $label = ucwords(preg_replace('~_~', ' ', $column));
+            //no label for readonly... 
+            if($readOnly) return ($object->get($column)?$object->get($column):$default).'<input ro="'.$column.'|'.$object->get($column).'" name="'.$column.'" value="'.($object->get($column)?$object->get($column):$default).'" type="hidden"></input>';
+            //if($readOnly) return '<label for="'.$column.'">'.$label.'</label>'.($object->get($column) || $default).'<input name="'.$column.'" value="'.($object->get($column) || $default).'" type="hidden"></input>';
             if($obfuscated){
                 $type = 'password';
                 $html = '<label for="'.$column.'">'.$label.'</label><input name="'.$column.'" type="password"'.
                         (($size)?' size="'.$size.'"':'').
-                        '></input>';
+                        ' class="'.$class.'"></input>';
             }else{
-                if($type == 'textarea'){
-                    $html = '<label for="'.$column.'">'.$label.'</label><textarea name="'.$column.'"'.
+                $rawValue = (($rawValue = $object->get($column))?$rawValue:($default?$default:''));
+                $value = ' value="'.$rawValue.'"';
+                switch($type){
+                    case 'textarea':
+                        $html = '<label for="'.$column.'">'.$label.'</label><textarea name="'.$column.'"'.
                         (($size)?' size="'.$size.'"':'').
                         '>'.(($value = $object->get($column))?' value="'.$value.'"':(($default)?' value="'.$default.'"':'')).'</textarea>';
-                }else{
-                    $html = ($type != 'hidden'?'<label for="'.$column.'">'.$label.'</label>':'').'<input name="'.$column.'" type="'.$type.'"'.
-                        (($value = $object->get($column))?' value="'.$value.'"':(($default)?' value="'.$default.'"':'')).
+                        break;
+                    case 'readOnly':
+                        $html = '<label for="'.$column.'">'.$label.'</label>'.($object->get($column) || $default).'<input name="'.$column.'"'.$value.' type="hidden"></input>';
+                        break;
+                    case 'link':
+                        $opts = Data::query($object_type, $query, 'id,name');
+                        $optionText = '';
+                        foreach($opts as $option){
+                            $optionText .= '<option value="'.$option['id'].'" '.($option['id'] == $rawValue?'selected="true"':'').'>'.$option['name'].'</option>';
+                        }
+                        $html = '<label for="'.$column.'">'.$label.'</label><select name="'.$column.'">'.$optionText.'</select><a href=""><div class="icon edit"></div> edit</a>';
+                        break;
+                    default :
+                        $html = ($type != 'hidden'?'<label for="'.$column.'">'.$label.'</label>':'').'<input name="'.$column.'" type="'.$type.'"'. $value.
                         (($size)?' size="'.$size.'"':'').
-                        '></input>';
+                        ' '.(($fieldType == 'instant' && $class)?'class="'.$class.'"':'').'></input>';
                 }
             }
+            //echo('['.htmlentities($html).']');
             return $html;
+        }
+        
+        public static function getSelectionOptions($type, $labelField='name', $conditions=array(), $idFieldName='id'){
+            
         }
         
         public static function setMetaFields(&$object, $reason = 'object saved'){
 	        if(is_array($object)){ // it's an old-style array
-	            if($object->isNew) $object['creation_time'] = date("Y-m-d H:i:s");
-	            $object['modification_time'] = date("Y-m-d H:i:s");
-	            $object['modified_by'] = MySQLData::$user_id;
+	            if($object->isNew) $object['created_at'] = date("Y-m-d H:i:s");
+	            //$object['modification_time'] = date("Y-m-d H:i:s");
+	            //$object['modified_by'] = MySQLData::$user_id;
+	            $object['updated_at'] = date("Y-m-d H:i:s");
 	            //$object['last_update_reason'] = $reason;
 	        }else if(is_object($object)){ // it's a new-style object
-	            if($object->isNew) $object->set('creation_time', date("Y-m-d H:i:s"));
-	            $object->set('modification_time', date("Y-m-d H:i:s"));
-	            $object->set('modified_by', MySQLData::$user_id);
+	            if($object->isNew) $object->set('created_at', date("Y-m-d H:i:s"));
+	            //$object->set('modification_time', date("Y-m-d H:i:s"));
+	            //$object->set('modified_by', MySQLData::$user_id);
+	            $object->set('updated_at', date("Y-m-d H:i:s"));
 	            //$object->set('last_update_reason', $reason);
 	        }else{
 	            throw new Exception("object is not an object or array, meta-information cannot be added.");
@@ -237,9 +293,9 @@
         //instance implementations
         public $cache = null;
         public $isNew = true;
-        protected $data = array();
-        protected $types = array(); //if not set, assumption is 'string'
-        protected $options = array(); //[type][option_name] = value
+        public $data = array();
+        public $types = array(); //if not set, assumption is 'string'
+        public $options = array(); //[type][option_name] = value
         public $primaryKey = 'id';
         public $firstSave = false;
         public $key_type = 'uuid'; // uuid, integer, autoincrement
@@ -261,24 +317,55 @@
             }else return false;
         }
         
-        public function HTML($separator = '<br/>',  $column = false){
+        public function HTML($separator = '<br/>',  $column = false, $action = false){
+            //print_r($this->options);
+            //print_r(Data::$core_fields);
+            //if($method == 'post' || $method == 'get')$method_string = 'method="'.$method.'"';
+            if($action) $action_string = 'action="'.$action.'"';
             if($column){
                 //echo($column.']');
-                return Data::HTMLField($column, self::getFieldOptions($column, $this), $this);
+                return Data::HTMLField($column, self::getFieldOptions($field, $this), $this);
             }else{
-                $res = '<form>';
-                foreach(array_merge(Data::$core_fields, $this->fields) as $field){
-                    //echo($field.'|');
-                    $res .= Data::HTML($separator, $field).$separator;
+                $cn = get_class($this);
+                $res = '<form class="form_basic" name="'.$cn.'" method="post" '.$action_string.'>';
+                $unordered = array();
+                $ordered = array();
+                foreach(array_merge(Data::$core_fields, $cn::$fields) as $field){
+                    $options = self::getFieldOptions($field, $this);
+                    $fieldHTML = Data::HTMLField($field, $options, $this);
+                    if(array_key_exists('position', $options)){
+                        $ordered[$options['position']] = $fieldHTML;
+                    }else{
+                        $unordered[] = $fieldHTML;
+                    }
                 }
-                $res .= '</form>';
+                foreach($ordered as $field){
+                    $res .= $field.$separator;
+                }
+                foreach($unordered as $field){
+                    $res .= $field.$separator;
+                }
+                $res .= '<input type="hidden" name="form" value="true" /></form>';
                 return $res;
             }
             //todo: implement full form
         }
         
+        public function harvest($prefix='', $suffix=''){
+            $cn = get_class($this);
+            $data = array();
+            foreach(array_merge(Data::$core_fields, $cn::$fields) as $field){
+                $value = WebApplication::get($prefix.$field.$suffix);
+                $data[$field] = $value;
+                if($field == $this->primaryKey){
+                    $this->isNew = false;
+                }
+            }
+            $this->data = $data;
+        }
+        
         public function option($column, $name){
-            //print_r($this->options); exit();
+            //echo('asddfasdsa'); print_r($this->options); echo($column); exit();
             if( ($options = $this->options[strtolower($column)]) && ($option = $options[$name]) ){
                 return $option;
             }
@@ -334,6 +421,7 @@
         }
         
         public function setData($data){
+            if($data[$this->primaryKey]) $this->isNew = false;
             return $this->data = $data;
         }
         

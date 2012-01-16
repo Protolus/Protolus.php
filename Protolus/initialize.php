@@ -18,64 +18,10 @@
      // try/catch this whole thing
 
     //require our core loader
-    require('./Protolus/Autoloader.class.php');
-    //allow core classes to be loaded
-    Autoloader::register_directory('./Protolus');
-    Autoloader::register_directory('./Protolus/WebRendering');
-    if(file_exists('./classes')) Autoloader::register_directory('./classes');
-    Autoloader::register_directory('./Protolus/Data');
-
-    $host = preg_replace('~\.~', '_', WebApplication::get('HTTP_HOST'));
-    WebApplication::setGet('hostID', $host);
-
-    PageRenderer::$template_directory = 'App/Panels/';
-    PageRenderer::$wrapper_directory = 'App/Panels/';
-    PageRenderer::$wrapper_controller_directory = 'App/Controllers/';
-    PageRenderer::$compile_directory = '/tmp/'.$host.'/_compile';
-    if(!file_exists(PageRenderer::$compile_directory)) mkdir(PageRenderer::$compile_directory, 0777, true);
-    PageRenderer::$cache_directory = '/tmp/'.$host.'/_cache';
-    if(!file_exists(PageRenderer::$compile_directory)) mkdir(PageRenderer::$compile_directory, 0777, true);
-    if(!file_exists(PageRenderer::$cache_directory)) mkdir(PageRenderer::$cache_directory, 0777, true);
-    PageRenderer::$panel_directory = 'App/Panels/';
-    PageRenderer::$root_directory = 'App/';
-
-    //load the application configuration data
-    //PageRenderer::registerConfigurationDirectory('Core/Configuration', array('conf'));
-    $configDirectory = 'Configuration/';
-    WebApplication::requireConfiguration('default', $configDirectory) or die('The Web Application defaults have gone away!');
-    WebApplication::requireConfiguration($host, $configDirectory) or die('The Web Application preferences('.$host.'.conf) have gone away!');
-    WebApplication::requireConfiguration('panel_mappings', 'App/') or die('The Web Application has no panel map!');
-    $mode = WebApplication::getConfiguration('application.mode');
-    
-    //a switch for the JS harness
-     if(WebApplication::get('dynamic')){
-        if(WebApplication::getGet('dynamic') == 'false'){
-            WebApplication::setCookie('dynamic');
-        }else{
-            if(WebApplication::getGet('dynamic') == 'true') WebApplication::setCookie('dynamic', 'true');\
-            PageRenderer::setWrapper('dynamic');
-            PageRenderer::render('dynamic');
-            //require('js.html');
-            exit();
-        }
-     }
-
-    //if we're in debug mode and the debug variable is set, we set the application level debug var
-    if( WebApplication::get('debug_mode') && $mode == 'debug' ) WebApplication::$debug = true;
-
-    //if we're debugging or in dev mode, let's turn on local logging
-    if( $mode == 'dev' || $mode == 'debug'){
-        Logger::$logFile = '../Log/log.html';
-    }
-    Logger::log('Application Mode:'.$mode);
-    Logger::$logToTempFile = true;
-
-    ErrorHandler::startup();
-    ErrorHandler::$debug = true;
-    Codec::$globalKey = 'stuff';
+    require('./Protolus/bootstrap.php');
 
     // hardcoded memcache interface
-    /*Session::$dataMode = 'memcache';
+    Session::$dataMode = 'memcache';
     $mc = new Memcached();
     if (!count($mc->getServerList())) {
         $mc->addServers(array(
@@ -83,7 +29,7 @@
         ));
     }
     new Session($mc);
-    WebApplication::addCache($mc);*/
+    WebApplication::addCache($mc);
 
     //Initialize our datasources (We have no local data)
     //*
@@ -97,32 +43,25 @@
                 case 'mongo':
                     $lastDB = MongoData::initialize($database);
                     $auto = strtolower($database['autoincrement']);
-                    if($auto == 't' || $auto == 'true') MongoAutoincrement::$db = $lastDB;
+                    if($auto == 't' || $auto == 'true'){
+                        MongoAutoincrement::$db = $lastDB;
+                    }
                     break;
                 case 'mysql': //MySQL is the default
-                    $lastDB = MySQLData::initialize($database);
-                    break;
                 default:
-                    throw new Exception('Unsupported Datasource type('.strtolower(trim($database['type'])).')');
+                    $lastDB = MySQLData::initialize($database);
             }
             $sess = strtolower($database['session']);
             //create a session from this DB if the conf calls for it, but only do it once
-            if( !$sessionInitialized && ($sess == 't' || $sess == 'true' || $sess === true) ){
+            if( !$sessionInitialized && ($sess == 't' || $sess == 'true') ){
                 Session::$dataMode = $database['type'];
-                Session::$appMode = ($database['session_hook']?$database['session_hook']:'custom'); // 'custom' or 'php'
+                Session::$appMode = 'custom'; // 'custom' or 'php'
                 new Session($lastDB);
                 $sessionInitialized = true;
             }
         }catch(Exception $ex){
             Logger::log('There was an error initializing Datasource('.$dbID.': '.$ex->getMessage().')');
         }
-    }
-    //If we have no session create a default one: 
-    if( !$sessionInitialized ){
-        Session::$dataMode = 'default';
-        Session::$appMode = 'php'; // 'custom' or 'php'
-        new Session();
-        $sessionInitialized = true;
     }
     //*/
     //if the app is in debug mode, and has the 'session_debug_enable' set to 'true', then set debug in the session
@@ -133,8 +72,18 @@
         if(strtolower(WebApplication::getGet('debug_mode')) == 'false') WebApplication::setSession('debug_mode', false);
         else WebApplication::setSession('debug_mode', true);
     }
-    if(file_exists(dirname(__FILE__).'/../setup.php')){
-        require(dirname(__FILE__).'/../setup.php'); //this is our local global environment hook
+    
+    if($timezone = strtolower(WebApplication::getConfiguration('application.timezone'))){
+        date_default_timezone_set($timezone);
+    }
+    
+    if(file_exists(dirname(__FILE__).'/../init.php')){
+        require(dirname(__FILE__).'/../init.php'); //this is our local global environment hook
+    }
+    if(!function_exists('defaultPanel')){
+        function defaultPanel(){
+            return 'index';
+        }
     }
 
     //todo: detect locale: set language, default wrapper based on region + original_referral
@@ -142,7 +91,8 @@
     // set the default wrapper (to be rendered if we don't encounter a custom wrapper)
     PageRenderer::setWrapper('default');
     // Now we set the panel passed in
-    if (!$panel = WebApplication::getGet('panel')) $panel = 'index';
+    if (!$panel = WebApplication::getGet('panel')) $panel = defaultPanel();
+    $incomingPanel = $panel;
     // if there is a script extension on the panel, ignore it
     if($pos = strpos($panel, '.php')) $panel = substr($panel, 0, $pos);
     if(substr($panel, -1) == '/'){ //pull off a trailing slash if there is one
@@ -164,5 +114,13 @@
                 $value = urldecode($words[1]);
                 WebApplication::setGet($key, $value);
             }
+        }
+    }
+    if(file_exists(dirname(__FILE__).'/../setup.php')){
+        require(dirname(__FILE__).'/../setup.php'); //this is our local global environment hook
+    }
+    if(!function_exists('defaultPanel')){
+        function defaultPanel(){
+            return 'index';
         }
     }

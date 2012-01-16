@@ -4,7 +4,7 @@
         public static $cleanRemoteIP = true;
         public static $lifetime = 2592000; //60 * 60 * 24 * 30 (1 mo)
         public static $sessionID = 'session_id';
-        public static $dataMode = 'default';
+        public static $dataMode = 'mysql';
         public static $appMode = 'php'; //php or custom
         public static $link = null;
         public static $internalValues = array();
@@ -13,46 +13,40 @@
         public function __construct($dblink){
             //todo: detect link type
             Session::$link = $dblink;
-            Logger::log('Session['.Session::$appMode.':'.Session::$dataMode.']');
-            if(Session::$appMode == 'php' && Session::$dataMode == 'default'){
-                session_start();
-            }else{
-                if(Session::$instance == null){
-                    switch(Session::$appMode){
-                        case 'php':
-                            Session::$sessionID = session_name();
-                            $this->session_id = WebApplication::getCookie(Session::$sessionID);
-                            session_set_save_handler(
-                                array( &$this, 'open' ),
-                                array( &$this, 'close' ),
-                                array( &$this, 'read' ),
-                                array( &$this, 'write' ),
-                                array( &$this, 'destroy' ),
-                                array( &$this, 'gc' )
-                            );
-                            register_shutdown_function( 'session_write_close' );
-                            session_start();
-                            break;
-                        case 'custom':
-                            $this->session_id = WebApplication::getCookie(Session::$sessionID);
-                            $data = $this->read($this->session_id);
-                            if(!empty($this->session_id) && $data !== true && is_array($data)){
-                                //echo('read something!'.print_r($data, true));
-                                $_SESSION = $data;
-                                $this->internalValues = $data;
-                            }else{
-                                $this->session_id = Data::generateUUID();
-                                Logger::log('Initialized new Session ID['.$this->session_id.']');
-                                //echo('Data:'.print_r($data, true));
-                                WebApplication::setCookie(Session::$sessionID, $this->session_id);
-                            }
-                            register_shutdown_function( array($this, 'shutdown') );
-                            break;
-                    }
-                    Session::$instance = $this;
-                }else{
-                    throw new Exception('Session already created, only one session instance at a time!');
+            if(Session::$instance == null){
+                switch(Session::$appMode){
+                    case 'php':
+                        Session::$sessionID = session_name();
+                        session_set_save_handler(
+                            array( &$this, 'open' ),
+                            array( &$this, 'close' ),
+                            array( &$this, 'read' ),
+                            array( &$this, 'write' ),
+                            array( &$this, 'destroy' ),
+                            array( &$this, 'gc' )
+                        );
+                        register_shutdown_function( 'session_write_close' );
+                        session_set_cookie_params( (time() + Session::$lifetime), '/', WebApplication::getConfiguration('application.cookie_domain'));
+                        session_start();
+                        break;
+                    case 'custom':
+                        $this->session_id = WebApplication::getCookie(Session::$sessionID);
+                        $data = $this->read($this->session_id);
+                        if(!empty($this->session_id) && $data !== true && is_array($data)){
+                            //echo('read something!'.print_r($data, true));
+                            $this->internalValues = $data;
+                        }else{
+                            $this->session_id = Data::generateUUID();
+                            Logger::log('Initialized new Session ID['.$this->session_id.']');
+                            //echo('Data:'.print_r($data, true));
+                            WebApplication::setCookie(Session::$sessionID, $this->session_id);
+                        }
+                        register_shutdown_function( array($this, 'shutdown') );
+                        break;
                 }
+                Session::$instance = $this;
+            }else{
+                throw new Exception('Session already created, only one session instance at a time!');
             }
         }
         
@@ -68,7 +62,6 @@
         }   
         
         public function shutdown(){
-            Logger::log('Saving Session');
             $this->write($this->session_id, $this->internalValues);
             Logger::log('Saved Session['.$this->session_id.']:'.print_r($this->internalValues, true));
         }
@@ -151,17 +144,17 @@
                 case 'mysql':
                     if(is_array($data)) $data = json_encode($data);
                     $data = mysql_real_escape_string($data);
-                    $sql = "INSERT INTO session_table (id, session_data, session_time, session_ip )
-                            VALUES ('$sid', '$data', $expiry, '$ip') 
-                            ON DUPLICATE KEY UPDATE session_data='$data', session_time = '$expiry'";
+                    $sql = "INSERT INTO session_table (id, session_data, session_time, session_ip, creation_time, last_update_time )
+                            VALUES ('$sid', '$data', $expiry, '$ip', now(), now() ) 
+                            ON DUPLICATE KEY UPDATE session_data='$data', session_time = '$expiry', last_update_time = now()";
                     $results = mysql_query($sql,  Session::$link);
                     break;
                 case 'mysqli':
                     if(is_array($data)) $data = json_encode($data);
                     $data =  Session::$link->real_escape_string($data);
-                    $sql = "INSERT INTO session_table (id, session_data, session_time, session_ip)
-                            VALUES ('$sid', '$data', $expiry, '$ip') 
-                            ON DUPLICATE KEY UPDATE session_data='$data', session_time = '$expiry'";
+                    $sql = "INSERT INTO session_table (id, session_data, session_time, session_ip, creation_time, last_update_time )
+                            VALUES ('$sid', '$data', $expiry, '$ip', now(), now() ) 
+                            ON DUPLICATE KEY UPDATE session_data='$data', session_time = '$expiry', last_update_time = now()";
                     $results =  Session::$link->query($sql);
                     break;
                 case 'mongo':
@@ -225,23 +218,6 @@
                     break;
                 case 'mysqli':
                     $sql = 'DELETE FROM session_table WHERE session_time < \''.(time( ) - Session::$lifetime).'\'';
-                    $results =  Session::$link->query($sql);
-                    return;
-                    break;
-                case 'mongo':
-                    break;
-                case 'memcache': //todo: implement me!
-            }
-        }
-        
-        public function initializeResources( ) {
-            $sql = 'CREATE TABLE `session_table` ( `id` varchar(32) NOT NULL, `session_data` longtext NOT NULL, `session_time` int(11) NOT NULL DEFAULT \'0\', `session_ip` varchar(32) NOT NULL, `session_status` enum(\'active\',\'passive\') NOT NULL, PRIMARY KEY (`id`) ) ENGINE=MyISAM DEFAULT CHARSET=latin1;';
-            switch(Session::$dataMode){
-                case 'mysql':
-                    $results = mysql_query($sql,  Session::$link);
-                    return;
-                    break;
-                case 'mysqli':
                     $results =  Session::$link->query($sql);
                     return;
                     break;

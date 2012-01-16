@@ -42,6 +42,7 @@ class WebApplication{
     private static $checkedForLogin = false;
     private static $localDataLoaded = false;
     public static $configuration_directory = 'Configuration/';
+    public static $device = false;
     private function __construct(){} //ugly PHP 'best practices' hack
 
     public static function requireConfiguration($fileName, $dir = null){
@@ -74,6 +75,10 @@ class WebApplication{
                 $_SERVER['SERVER_NAME'].':'.$_SERVER['SERVER_PORT'].$_SERVER['REQUEST_URI']:
                 $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']
             );
+    }
+    
+    public static function path(){
+        return($_SERVER['REQUEST_URI']);
     }
 
     public static function uploadedFile($name){

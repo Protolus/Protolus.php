@@ -243,23 +243,21 @@ class ErrorHandler{
     }
     
     public static function notify($subject, $message){
-        global $config;
+        /*global $config;
         //send an email here
         global $emailOnError;
         if($emailOnError == 'on'){
-            /* To send HTML mail, you can set the Content-type header. */
             $headers  = "MIME-Version: 1.0\r\n";
             $headers .= "Content-type: text/html; charset=iso-8859-1\r\n";
         
-            /* additional headers */
             $headers .= "From: ReputationDefender <noreply@reputationdefender.com>\r\n";
             
             $names = explode(',', $config->getProperty('error_notification_email_addresses'));
             foreach($names as $name){
                 $email = trim($name);
-                mail($email, $subject, $message, $headers);
+                //mail($email, $subject, $message, $headers);
             }
-        }
+        }*/
         //todo: add email code
     }
     

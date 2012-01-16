@@ -69,7 +69,7 @@ class Logger{
         else{
             $fileParts = explode('/', $_SERVER['SCRIPT_FILENAME']);
             $script_file = $fileParts[count($fileParts)-1];
-            $linePrefix = $_SERVER['SERVER_SIGNATURE'].' - '.date('H:i:s,u').' - ['.number_format($thisTime-Logger::$lastTime, 3).'/'.number_format($thisTime, 3).'] - protolus - '.PageRenderer::$root_panel.' - '.Logger::$id.' - ';
+            $linePrefix = date('H:i:s,u').' protolus['.Logger::getTraceSummary($backtrace).'] panel['.PageRenderer::$root_panel.'] INFO '.Logger::$id.' ';
         }
         Logger::$lastTime = $thisTime;
         
@@ -85,7 +85,7 @@ class Logger{
             syslog($textPrefix.$level, $text);
         }
         if(Logger::$logToUser) $location.'('.$file.') '.$text;
-        if(Logger::$logFile != null){
+        if(Logger::$logFile != null && Logger::$logFile != -1){ //required because someone randomly stuck in a hardcoded conf value whether it's set or not, if this ever gets found, this check may be removed
             if(Logger::$fileHandle == null){
                 if(!is_dir(dirname(Logger::$logFile))){
                     //echo('making '.dirname(Logger::$logFile)); exit();

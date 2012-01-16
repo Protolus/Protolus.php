@@ -29,6 +29,7 @@
             $renderer->register_function('has_role', array('SmartyUtil', 'has_role'), false);
             $renderer->register_function('date', array('SmartyUtil', 'date'), false);
             $renderer->register_function('form', array('SmartyUtil', 'form'), false);
+            $renderer->register_function('encode', array('SmartyUtil', 'encode'), false);
             //$renderer->assign('language', Locale::getLanguageCode());
             return $renderer;
         }
@@ -57,6 +58,7 @@
             $renderer->register_modifier('view_state', array('SmartyUtil', 'view_state'));
             $renderer->register_function('date', array('SmartyUtil', 'date'), false);
             $renderer->register_function('form', array('SmartyUtil', 'form'), false);
+            $renderer->register_function('encode', array('SmartyUtil', 'encode'), false);
             $renderer->assign('language', Locale::getLanguageCode());
             //return $renderer;
         }
@@ -147,6 +149,16 @@
         }
         //this formats a link properly... passing in ID and class is optional but 'link' is required
         static function local_link($params, $content, &$smarty){
+            //handle variables
+            preg_match_all('~\[([^\]]*)?\]~', $params['link'], $matches);
+            foreach($matches[1] as $index=>$match){
+                $parts = array_reverse(explode('.', $match));
+                $p = array_pop($parts);
+                $current = $smarty->get_template_vars($p);
+                while(count($parts) > 0) $current = $current[array_pop($parts)];
+                $params['link'] = preg_replace('~\['.$match.'\]~', $current, $params['link']);
+            }
+            //$content = $params['link'].print_r($matches, true); //exit();
             if(isset($params['variable'])){
                 $parts = array_reverse(explode('.', $params['variable']));
                 $current = $smarty->get_template_vars(array_pop($parts));
@@ -155,13 +167,29 @@
                 }
                 $params['link'] = $current;
             }
+            $add_events = '';
             if(isset($params['id'])){
                 $add_id = 'id="'.$params['id'].'"';
             }
             if(isset($params['class'])){
                 $add_class = 'class="'.$params['class'].'"';
             }
-            return '<a href="/'.$params['link'].'" '.$add_id.' '.$add_class.'>'.$content.'</a>';
+            if(isset($params['script'])){
+                $add_class = 'onclick="'.$params['script'].'"';
+            }            
+            if(isset($params['mouseover'])){
+                $add_events .= ' onmouseover="'.$params['mouseover'].'"';
+            }
+            if(isset($params['mouseout'])){
+                $add_events .= ' onmouseout="'.$params['mouseout'].'"';
+            }
+            if(isset($params['rel'])){
+                $add_rel = 'rel="'.$params['rel'].'"';
+            }
+            if(isset($params['target'])){
+                $add_rel = 'target="'.$params['target'].'"';
+            }
+            return '<a href="/'.$params['link'].'" '.$add_id.' '.$add_class.' '.$add_rel.'>'.$content.'</a>';
         }
     
         static function language($params, &$smarty){
@@ -248,8 +276,10 @@
             if(isset($params['title'])) PageRenderer::$core_data['page_title'] = SmartyUtil::render_vars($params['title'], $smarty);
             if(isset($params['heading'])) PageRenderer::$core_data['page_heading'] = SmartyUtil::render_vars($params['heading'], $smarty);
             if(isset($params['meta_description'])) PageRenderer::$core_data['page_meta_description'] = SmartyUtil::render_vars($params['meta_description'], $smarty);
+            if(isset($params['image'])) PageRenderer::$core_data['page_image'] = SmartyUtil::render_vars($params['image'], $smarty);
             //if(isset($params['meta'])) PageRenderer::$core_data['page_meta'] = array_map(array('SmartyUtil', 'render_vars'), json_decode($params['meta']), array($smarty)); //JSON not legal in macro 
             if(isset($params['wrapper'])) PageRenderer::setWrapper($params['wrapper']);
+            
         }
     
         static function perform_conversion($params, &$smarty){
@@ -293,8 +323,6 @@
         static function date($params, &$smarty){
             if(!$params['variable'] && !$params['timestamp'] && !$params['format']) return;
             if($params['format']) $format = $params['format'];
-            //if($params['variable']) eval('$timestamp = '.$params['variable'].';');
-            //echo($timestamp);
             $parts = explode('.', $params['variable']);
             $timestamp = $smarty->get_template_vars(current($parts));
             while(next($parts)){
@@ -302,7 +330,13 @@
                 $timestamp = $timestamp[current($parts)];
             }
             if($params['timestamp']) $timestamp = $params['timestamp'];
-            return date($format, $timestamp);
+            if(!$params['timestamp'] && !$params['variable']){
+                $timestamp = time();
+                $gmt_offset = 0;
+            }else{
+                $gmt_offset = timezone_offset_get(date_default_timezone_get());
+            }
+            return date($format, $timestamp + $gmt_offset);
         }
         
         static function json($params, &$smarty){
@@ -357,6 +391,27 @@
                 echo "";
             }
     
+        }
+        static function encode($params, &$smarty){
+            if(!isset($params['value']) || !isset($params['type'])){
+                
+                 return "";
+            }
+            preg_match_all('~\[([^\]]*)?\]~', $params['value'], $matches);
+            foreach($matches[1] as $index=>$match){
+                $parts = array_reverse(explode('.', $match));
+                $p = array_pop($parts);
+                $current = $smarty->get_template_vars($p);
+                while(count($parts) > 0) $current = $current[array_pop($parts)];
+                $params['value'] = preg_replace('~\['.$match.'\]~', $current, $params['value']);
+            }
+            
+            
+            switch($params['type']){
+                case "entity":
+                    return htmlentities($params['value']);
+                break;
+            }
         }
     }
 ?>

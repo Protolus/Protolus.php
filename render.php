@@ -12,6 +12,7 @@
      * todo: replace this header block with YAML
      ******************************************************/
 
+    ini_set('zlib.output_compression', 'On'); //setup compression for lighttpd
     require('./Protolus/initialize.php');
     if(Panel::isDefined($panel)){
         PageRenderer::$controllers = false;

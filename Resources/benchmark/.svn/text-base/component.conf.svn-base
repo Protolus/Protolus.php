@@ -1,5 +1,0 @@
-[resource]
-benchmark_js = benchmark.js
-
-[dependency]
-mootools = mootools
