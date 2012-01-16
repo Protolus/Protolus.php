@@ -1,0 +1,418 @@
+//base class for logging in, authing, stuff and junk
+
+var Network = new Class({
+    Implements: Options,
+    options:{
+       app_ids: new Array(),
+       site_domain : "stylepage.com",
+    },
+    supportedTypes : ['facebook', 'twitter', 'username', 'google', 'yahoo'],
+    typeObjs : new Array(),
+    loaded : new Array(),
+    init : new Array(),
+    initialize : function(options){
+       this.setOptions(options);
+       this.buildInit();
+    },
+    buildInit : function(){
+       this.init['facebook'] = function(callback){
+		if(this.options.app_ids['facebook']){
+          var app_id = this.options.app_ids['facebook'];
+          this.typeObjs['facebook'] = new Facebook({'app_id': app_id, 
+          'onLoad': function(){this.loaded.push('facebook'); if(callback)callback();}.bind(this)
+          });
+        }else{
+			var req = new Request.JSON({
+                url : '/user/network_apps',
+                onSuccess : function(data){
+					if(data.fb_app_id) this.options.app_ids['facebook'] = data['fb_app_id'];
+					if(data.site_domain) this.options.app_ids['site_domain'] = data['site_domain'];
+					var app_id = this.options.app_ids['facebook'];
+					this.typeObjs['facebook'] = new Facebook({'app_id': app_id, 
+			          'onLoad': function(){this.loaded.push('facebook'); if(callback)callback();}.bind(this)
+			          });
+					
+                }.bind(this)
+            }).send();
+		}
+
+         
+       }.bind(this);
+       this.init['twitter'] = function(callback){
+          var site_domain = this.options.site_domain;
+          this.typeObjs['twitter'] = new Twitter({'site_domain':site_domain});
+          this.loaded.push('twitter'); 
+          if(callback) callback();
+       }.bind(this);
+       this.init['google'] = function(callback){
+          var site_domain = this.options.site_domain;
+          this.typeObjs['google'] = new Google({'site_domain':site_domain});
+          this.loaded.push('google'); 
+          if(callback) callback();
+       }.bind(this);
+       this.init['username'] = function(callback){
+          this.typeObjs['username'] = new Login();
+          this.loaded.push('username');
+          if(callback)callback();
+       }.bind(this);
+       this.init['yahoo'] = function(callback){
+          var site_domain = this.options.site_domain;
+          this.typeObjs['yahoo'] = new Yahoo({'site_domain':site_domain});
+          this.loaded.push('yahoo');
+          if(callback)callback();
+       }.bind(this);
+       
+    },
+    typeSupported : function(type){
+       for(var i=0; i< this.supportedTypes.length; i++){
+          if(type == this.supportedTypes[i]) return true;
+       }
+       return false;
+   },
+   alreadyLoaded : function(type){
+      for(var i=0; i< this.loaded.length; i++){
+         if(type == this.loaded[i]) return true;
+      }
+      return false;
+   },
+   login : function(type, callback){
+      if(!this.alreadyLoaded(type)){
+         this.require(type, function(){
+            this.getCurrentUser(type, callback)
+            }.bind(this)
+         );
+      }else{
+         this.getCurrentUser(type, callback);
+      }
+   },
+   
+   create : function(type, callback){
+      if(!this.alreadyLoaded(type)){
+            this.require(type, function(){
+               this.linkUser(type, callback)
+            }.bind(this));
+      }else{
+         this.linkUser(type, callback);
+      }
+   }, 
+   getCurrentUser : function(type, callback){
+      this.typeObjs[type].authCredentials(function(post_data){
+                if(window.woopraTracker) window.woopraTracker.pushEvent({name:type+'_request'});
+                var req = new Request.JSON({
+                    url : '/authenticate',
+                    onSuccess : function(data){
+                        if(!data ||data.length == 0){
+                            //if(window.console) ////console.log('Request for user account unsucessful: token: '+creds.session.secret+' id:'+creds.session.uid);
+                            
+                            callback();
+                        }else{
+                            window.user = data;
+                             callback(data);
+                        }
+                    }
+                }).post(post_data);
+            }.bind(this));
+      
+   },
+   linkUser : function(type, callback){
+      this.typeObjs[type].authCredentials(function(post_data){
+               if(window.woopraTracker) window.woopraTracker.pushEvent({name:type+'_link'});
+               var req = new Request.JSON({
+                   url : '/save_user',
+                   onSuccess : function(data){
+                       if(!data ||data.length == 0){
+                           //if(window.console) ////console.log('Request for user account unsucessful: token: '+creds.session.secret+' id:'+creds.session.uid);
+                       }else{
+                           window.user = data;
+                            callback(data);
+                       }
+                   }
+               }).post(post_data);
+           }.bind(this));
+      
+   }, 
+   require : function(type, callback){
+      if(this.typeSupported(type)){
+         this.init[type](callback);
+      }
+   }
+   
+});
+
+var Login = new Class({
+   Implements: Options,
+   options:{
+   },
+   initialize : function(options){
+      this.setOptions(options);
+   },
+   authCredentials : function(callback){
+      var payload = {"type":"username", "data":{}};
+       if(document.id('login_password')) payload['password'] = document.id('login_password').get('value');
+       if(document.id('login_email')) payload['username'] = document.id('login_email').get('value');
+      callback(payload);
+   }
+
+});
+
+
+var Facebook = new Class({
+    Implements: Options,
+    options:{
+       app_id : '',
+       require : true,
+       onLoad : function(){}
+    },
+    initialize : function(options){
+       this.setOptions(options);
+       if(this.options.require){
+          this.require(this.options.onLoad);
+       }
+    },
+    require : function(callback){
+       var app_id = this.options.app_id;
+            Asset.javascript( 'http://connect.facebook.net/en_US/all.js', {
+                id: 'facebook_library',
+                'onload': function(){
+                        //give facebook a place in the body to operate
+                        document.body.appendChild(new Element('div', {id: 'fb-root'}));
+                        FB.init({
+                            appId  : app_id, status : true, cookie : true, xfbml : true 
+                        });
+                        if(callback) callback();
+                    }.bind(this)
+            });
+       
+    },
+    authCredentials : function(callback){
+       FB.getLoginStatus(function(response) {
+                if(window.woopraTracker) window.woopraTracker.pushEvent({name:'facebook_status',state:response.state});
+                if (response.session) {
+                    var post_data = 'type=facebook&fb_auth_token='+response.session.access_token+'&fb_id='+response.session.uid+'&referral='+Cookie.read('referral');
+                    if(window.user) post_data = post_data + '&user_id='+window.user.user_id;
+                    callback(post_data);
+                } else {
+                    FB.login(function(response){
+                        //if(window.console) ////console.log(['fb login data', data]);
+                        if(response.status == 'connected'){
+                           var post_data = 'type=facebook&fb_auth_token='+response.session.access_token+'&fb_id='+response.session.uid+'&referral='+Cookie.read('referral');
+                           if(window.user) post_data = post_data + '&user_id='+window.user.user_id;
+                            callback(post_data); 
+                        }
+                    }.bind(this), {
+                        perms:'user_photos,offline_access,publish_stream'
+                    });
+                }
+            });   
+    }
+});
+var Google = new Class({
+   Implements: Options,
+   options:{
+      app_id : '',
+      require : true,
+      site_domain : "stylepage.com",
+      onLoad : function(){}
+   },
+   initialize : function(options){
+      this.setOptions(options);
+      if(this.options.onLoad){
+         this.options.onLoad();
+      }
+   }, 
+   require : function(callback){
+      if(callback) callback();
+   },
+   authCredentials : function(callback){
+      var site_domain = this.options.site_domain;
+      var oauth = new oauthPopUp('google', { path : '/signup/google', 
+                                             'autoOpen':true, 
+                                             'directComm' : true,
+                                             'domain' : site_domain,
+                                             'specs' : {   
+                                                 height: 700
+                                             },
+                                             callback: function(message){ 
+                                                 var payload = message.split(",");
+                                                 var i=0;
+                                                 var arr = new Array();
+                                                 var res = new Array();
+                                                 while(i<payload.length){
+                                                    var v = i + 1;
+                                                    arr[arr.length] = payload[i];
+                                                    if(v % 3 == 0 && v !=0){
+                                                       res[res.length] = arr;
+                                                       arr = new Array();
+                                                    }
+                                                    i++;
+                                                 }
+                                                 callback(res);
+                                             }
+                                         }
+                 );
+   }   
+});
+
+var Yahoo = new Class({
+   Implements: Options,
+   options:{
+      app_id : '',
+      require : true,
+      site_domain : "stylepage.com",
+      onLoad : function(){}
+   },
+   initialize : function(options){
+      this.setOptions(options);
+      if(this.options.onLoad){
+         this.options.onLoad();
+      }
+   }, 
+   require : function(callback){
+      if(callback) callback();
+   },
+   authCredentials : function(callback){
+      var site_domain = this.options.site_domain;
+      var oauth = new oauthPopUp('yahoo', { path : '/signup/yahoo', 
+                                             'autoOpen':true, 
+                                             'directComm' : true,
+                                             'domain' : site_domain,
+                                             'specs' : {   
+                                                 height: 700
+                                             },
+                                             callback: function(message){ 
+                                                 var payload = {};
+                                                 var keyVals = message.split(",");
+                                                 if(keyVals.length > 0){
+                                                     var i=0;
+                                                     while(i < keyVals.length){
+                                                         var parts = keyVals[i].split(":");
+                                                         if(parts.length >= 2){
+                                                             payload[parts[0]] = parts[1];
+                                                         }
+                                                         i++;
+                                                     }
+                                                     payload['type'] = 'yahoo';
+                                                     payload['referral'] = Cookie.read('referral');
+                                                     if(window.user) payload['user_id'] = window.user.user_id;                                                   
+                                                     callback(payload);
+                                                       
+                                                 }
+                                                 
+                                             }
+                                         }
+                 );
+      
+   }   
+});
+var Twitter = new Class({
+   Implements: Options,
+   options:{
+      app_id : '',
+      require : true,
+      site_domain : "stylepage.com",
+      onLoad : function(){}
+   },
+   initialize : function(options){
+      this.setOptions(options);
+      if(this.options.onLoad){
+         this.options.onLoad();
+      }
+   }, 
+   require : function(callback){
+      if(callback) callback();
+   },
+   authCredentials : function(callback){
+      var site_domain = this.options.site_domain;
+              var oauth = new oauthPopUp('twitter', { path : '/signup/twitter', 
+                                                      'autoOpen':true, 
+                                                      'directComm' : true,
+                                                      'domain' : site_domain,
+                                                      'specs' : {   
+                                                          height: 700
+                                                      },
+                                                      callback: function(message){ 
+                                                          var payload = {};
+                                                          var keyVals = message.split(",");
+                                                          if(keyVals.length > 0){
+                                                              var i=0;
+                                                              while(i < keyVals.length){
+                                                                  var parts = keyVals[i].split(":");
+                                                                  if(parts.length >= 2){
+                                                                      payload[parts[0]] = parts[1];
+                                                                  }
+                                                                  i++;
+                                                              }
+                                                              payload['type'] = 'twitter';
+                                                              payload['referral'] = Cookie.read('referral');
+                                                              if(window.user) payload['user_id'] = window.user.user_id;
+                                                              callback(payload);
+                                                          }
+                                                      }
+                                                  }
+                          );
+                          
+   }
+});
+
+function initiateWizardNetwork(type, call_back){
+	if( document.id(type+'_state').innerHTML != 'on' && 
+		document.id(type+'_credentials_verified_value').get('value') == 'false' ){
+			var oauth = new oauthPopUp(type, {
+					path : '/oauth/'+type, 
+					callback: function(data){ 
+						document.id(type+'_state').set('text', 'Network Added');
+						var notimooManager = new Notimoo({
+	                    });
+	                    notimooManager.show({
+	                        message: 'SERVICE ADDED'
+	                    });
+	                    if(call_back) call_back();
+					}, 
+					'autoOpen':true
+			});
+	}
+	return false;
+}
+
+function initiateNetwork(type){
+	if( document.id(type+'_state').innerHTML != 'on' && 
+		document.id(type+'_credentials_verified_value').get('value') == 'false' || document.id(type+'_credentials_verified_value').get('value') == '' ){
+			var oauth = new oauthPopUp(type, {
+					path : '/oauth/'+type, 
+					callback: function(){ 
+						document.id(type+'_credentials_verified_value').set('value', 'true'); 
+						document.id(type+'_state').dispose(); 
+						var spanEl = new Element('span', {'id':type+'_state', 'class':'share_button_state_text','text':'on'}); 
+						document.id('crosspost_'+type).set('value', true); 
+						document.id(type+'_btn').getParent().adopt(spanEl); 
+						document.id(type+'_btn').removeClass('off'); 
+					}, 
+					'autoOpen':true
+			});
+	}else if( document.id(type+'_state').innerHTML == 'on'){
+		document.id(type+'_state').dispose(); 
+		var spanEl = new Element('span', {'id':type+'_state', 'class':'share_button_state_text off_text','text':'off'}); 
+		document.id('crosspost_'+type).set('value', false); 
+		document.id(type+'_btn').getParent().adopt(spanEl); 
+		document.id(type+'_btn').addClass('off');
+	}else{
+		document.id(type+'_state').dispose(); 
+		var spanEl = new Element('span', {'id':type+'_state', 'class':'share_button_state_text','text':'on'}); 
+		document.id('crosspost_'+type).set('value', true);  
+		document.id(type+'_btn').getParent().adopt(spanEl); 
+		document.id(type+'_btn').removeClass('off');
+	}  
+	return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+

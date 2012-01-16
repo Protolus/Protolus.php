@@ -1,0 +1,60 @@
+@import '../colors.scss';
+@import '../sizing.scss';
+
+    ol.paginator{
+        width : 100%;
+        display : none;
+        text-align :center;
+        li{
+            margin-right: 5px;
+            display : inline-block;
+            padding :5px;
+            text-shadow: 3px 3px 0 #000,
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
+            -moz-text-shadow: $shadow 3px 3px 3px;
+            font-weight: bold;
+            color:$textHighlight;
+            font-size: 20px;
+            background-color: #550000;
+            -moz-border-radius: 20px 20px 20px 20px;
+            border-radius: 20px 20px 20px 20px;
+            width: 20px;
+            bottom: -5px;
+            position:relative;
+            background:url(../images/header_background_x.jpg) repeat center;
+            border:1px solid $shadow;
+            -webkit-box-shadow:inset 3px 3px 10px $shadow;
+            -moz-box-shadow:inset 3px 3px 10px $shadow;
+            box-shadow:inset 3px 3px 10px $shadow;
+        }
+        li a:hover{
+            color:$lightTextColor;
+        }
+        li:hover{
+            color:$lightTextColor;
+        }
+        .next:before{
+            content:'\2192';
+        }
+        .last:before{
+            content:'\21E5';
+        }
+        .previous:before{
+            content:'\2190';
+        }
+        .first:before{
+            content:'\21E4';
+        }
+        .next, .last, .previous, .first{
+            overflow:hidden;
+            opacity:1;
+            position:relative;/* hack due to slideshow styles */
+            a{
+                opacity:.001;
+                margin-left:-20px;
+            }
+        }
+    }

@@ -1,0 +1,5 @@
+[resource]
+network = Network.js
+
+[dependency]
+protolus = protolus
