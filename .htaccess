@@ -1,0 +1,98 @@
+#Setup error docs
+#ErrorDocument 401 test.php?error=401
+#ErrorDocument 403 test.php?error=403
+#ErrorDocument 404 test.php?error=404
+#ErrorDocument 500 test.php?error=500
+
+# Make sure required options are on
+Options +FollowSymlinks
+RewriteEngine on
+
+# Make sure there's no way of getting to this file
+<FilesMatch "\.htaccess$">
+    Order deny,allow
+    Deny from all
+    Satisfy all
+</FilesMatch>
+
+# Set user agent environment variables
+SetEnvIfNoCase User-Agent (Opera|Chrome|Version|Firefox|MSIE)[\/|\s](\d+)\. browser=$1 version=$2
+SetEnvIf browser Version browser=Safari
+SetEnvIf browser MSIE browser=IE
+
+# Pass html requests through to generate page
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*ajax/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*data/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*render/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*stats/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*api/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*javascript/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^(.*)$ index.php?panel=$1&%{QUERY_STRING} [L]
+
+# Pass ajax requests through the data portal
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*render/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*stats/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*api/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*javascript/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^data/(.*)$ data.php?dialect=json&panel=$1&%{QUERY_STRING} [L]
+
+# Pass render requests through the render portal
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*stats/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*api/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*javascript/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^render/(.*)$ render.php?panel=$1&%{QUERY_STRING} [L]
+
+# Pass stats requests through the stats portal
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*api/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*javascript/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^stats/(.*)$ stats.php?panel=$1&%{QUERY_STRING} [L]
+
+# Pass api requests through the api portal
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*javascript/.*$ [NC]
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^api/(.*)$ api.php?panel=$1&%{QUERY_STRING} [L]
+
+# Minify a javascript bundle
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^javascript/min/(.*)$ resource.php?resources=$1&type=js&minify=true&%{QUERY_STRING} [L]
+
+# Produce a javascript bundle
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_URI} !^.*style/.*$ [NC]
+rewriterule ^javascript/(.*)$ resource.php?resources=$1&type=js&%{QUERY_STRING} [L]
+
+# Minify a style bundle
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+rewriterule ^style/min/(.*)$ resource.php?resources=$1&type=css&minify=true&%{QUERY_STRING} [L]
+
+# Produce a style bundle
+RewriteCond %{REQUEST_FILENAME} !^.*\.(png|gif|jpg|css|js|swf|flv|otf|ttf|tpl)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+rewriterule ^style/(.*)$ resource.php?resources=$1&type=css&%{QUERY_STRING} [L]
