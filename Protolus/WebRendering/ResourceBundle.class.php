@@ -5,6 +5,7 @@
         public static $integratedMinify = true;
         public static $merge = true;
         public static $hardcodedVersion = '101';
+        public static $resourcePackager = false;
                   
         
         public $resources = null;
@@ -63,23 +64,31 @@
                     if($type == 'js') $paths[] = $resource;
                     else $styles[] = $resource;
                 }
-                if(count($paths) == 0) throw new Exception('no resources to include for '.$names.' : '.print_r($resources, true));
-                if(count($paths) == 1){
-                    $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="/min/?f='.$paths[0].'&amp;version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                if(ResourceBundle::$resourcePackager){
+                    $names = explode(',', $names);
+                    foreach($names as $name){
+                        $include .= '<link origin="protolus" resource="'.$name.'" rel="stylesheet" href="/style/min/'.$name.'?version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />
+                        <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/min/'.$name.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                    }
                 }else{
-                    $commonPrefix = ResourceBundle::commonPath($paths);
-                    $cleanPaths = array();
-                    foreach($paths as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
-                    $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="/min/?f='.implode(',', $paths).'&amp;version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
-                }
-                if(count($styles) != 0){
-                    if(count($styles) == 1){
-                        $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="/min/?f='.$styles[0].'&amp;version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                    if(count($paths) == 0) throw new Exception('no resources to include for '.$names.' : '.print_r($resources, true));
+                    if(count($paths) == 1){
+                        $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="/min/?f='.$paths[0].'&amp;version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
                     }else{
-                        $commonPrefix = ResourceBundle::commonPath($styles);
+                        $commonPrefix = ResourceBundle::commonPath($paths);
                         $cleanPaths = array();
-                        foreach($styles as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
-                        $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="/min/?b='.substr($commonPrefix, 1,-1).'&amp;f='.implode(',', $cleanPaths).'&amp;version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                        foreach($paths as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
+                        $include .= '<script origin="protolus" resource="'.$names.'" type="text/javascript" src="/min/?f='.implode(',', $paths).'&amp;version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+                    }
+                    if(count($styles) != 0){
+                        if(count($styles) == 1){
+                            $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="/min/?f='.$styles[0].'&amp;version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                        }else{
+                            $commonPrefix = ResourceBundle::commonPath($styles);
+                            $cleanPaths = array();
+                            foreach($styles as $path) $cleanPaths[] = substr($path, strlen($commonPrefix));
+                            $include .= '<link origin="protolus" resource="'.$names.'" rel="stylesheet" href="/min/?b='.substr($commonPrefix, 1,-1).'&amp;f='.implode(',', $cleanPaths).'&amp;version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />'."\n";
+                        }
                     }
                 }
             }else{

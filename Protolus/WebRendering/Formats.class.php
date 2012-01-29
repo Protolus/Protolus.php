@@ -26,6 +26,9 @@
                 case 'properties':
                     $result = new Properties($file);
                     break;
+                case 'json':
+                    $result = json_decode(file_get_contents($file), true);
+                    break;
                 case 'csv':
                     $result = array();
                     if (($handle = fopen($file, "r")) !== FALSE) {
