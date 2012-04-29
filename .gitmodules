@@ -1,0 +1,6 @@
+[submodule "Resources/Protolus"]
+	path = Resources/Protolus
+	url = git@github.com:khrome/Protolus.git
+[submodule "Resources/visualization"]
+	path = Resources/visualization
+	url = git@github.com:khrome/Visualization.js.git

@@ -1,0 +1,20 @@
+{
+    "resource" :{
+        "protolus":"../Protolus/Source/Core/Protolus.js",
+        "protolus_lib":"../Protolus/Source/Core/Protolus.Lib.js",
+        "protolus_logger":"../Protolus/Source/Core/Protolus.Logger.js",
+        "protolus_window":"../Protolus/Source/Core/Protolus.Window.js",
+        "protolus_resource":"../Protolus/Source/Core/Protolus.Resource.js",
+        "protolus_webapplication":"../Protolus/Source/Core/Protolus.WebApplication.js",
+        "protolus_panel":"../Protolus/Source/Core/Protolus.Panel.js",
+        "protolus_paginator":"../Protolus/Source/Core/Protolus.Paginator.js",
+        "protolus_page":"../Protolus/Source/Core/Protolus.Page.js",
+        "protolus_page_renderer":"../Protolus/Source/Core/Protolus.PageRenderer.js",
+        "protolus_model":"../Protolus/Source/Core/Protolus.Modal.js",
+        "protolus_file_uploader":"../Protolus/Source/Core/Protolus.FileUploader.js",
+    },
+    "dependency":[
+        "protolus-init",
+        "midas"
+    ]
+}

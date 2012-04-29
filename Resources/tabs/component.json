@@ -1,0 +1,28 @@
+{
+    "resource" :{
+        "art" : "art/ART.js"
+        "art_path" : "art/ART.Path.js"
+        "art_svg" : "art/ART.SVG.js"
+        "art_vml" : "art/ART.VML.js"
+        "viz_svg" : "Visualization.SVG.js"
+        "viz_vml" : "Visualization.VML.js"
+        "art_base" : "art/ART.Base.js"
+        "viz" : "Visualization.js"
+        "viz_path" : "Visualization.MutablePath.js"
+        "art_shapes" : "art/ART.Shapes.js"
+        "art_font" : "art/ART.Font.js"
+        "fx_step" : "Fx.Step.js"
+        "viz_set" : "Visualization.Set.js"
+        "viz_sets" : "Visualization.Sets.js"
+        "viz_2D" : "Visualization.TwoAxis.js"
+        "viz_line" : "Visualization.LineChart.js"
+        "viz_radial" : "Visualization.RadialAxis.js"
+        "viz_pie" : "Visualization.PieChart.js"
+        "viz_bar" : "Visualization.BarChart.js"
+        "array_sort" : "Array.sortOn.js"
+        "element_probe" : "Element.Probe.js"
+    },
+    "dependency":[
+        "mootools"
+    ]
+}

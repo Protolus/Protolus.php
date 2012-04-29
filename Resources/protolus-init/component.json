@@ -1,0 +1,9 @@
+{
+    "resource" :{
+        "protolus_init":"../Protolus/Source/Protolus.js",
+        "protolus_registry":"../Protolus/Source/Protolus.Registry.js"
+    },
+    "dependency":[
+        "protolus-extensions"
+    ]
+}

@@ -1,0 +1,37 @@
+{
+    "resource" :{
+        "Protolus_Image":"../Protolus/Source/Image/Protolus.Image.js",
+        "Protolus_Image_Booth":"../Protolus/Source/Image/Protolus.Image.Booth.js",
+        "Protolus_Image_Layer":"../Protolus/Source/Image/Protolus.Image.Layer.js",
+        "Protolus_Image_Filter":"../Protolus/Source/Image/Protolus.Image.Filter.js",
+        "Protolus_Image_Tool":"../Protolus/Source/Image/Protolus.Image.Tool.js",
+        "Protolus_Image_Brush":"../Protolus/Source/Image/Protolus.Image.Brush.js",
+        "Protolus_Image_Operation":"../Protolus/Source/Image/Protolus.Image.Operation.js",
+        "Brushes_Protolus_Image_Brush_Scatter10px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.Scatter10px.js",
+        "Brushes_Protolus_Image_Brush_Round3px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.Round3px.js",
+        "Brushes_Protolus_Image_Brush_SoftRound10px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.SoftRound10px.js",
+        "Brushes_Protolus_Image_Brush_SoftRound40px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.SoftRound40px.js",
+        "Brushes_Protolus_Image_Brush_SoftRound15px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.SoftRound15px.js",
+        "Brushes_Protolus_Image_Brush_Round5px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.Round5px.js",
+        "Brushes_Protolus_Image_Brush_Square1px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.Square1px.js",
+        "Brushes_Protolus_Image_Brush_SoftRound5px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.SoftRound5px.js",
+        "Brushes_Protolus_Image_Brush_SoftRound20px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.SoftRound20px.js",
+        "Brushes_Protolus_Image_Brush_Square5px":"../Protolus/Source/Image/Brushes/Protolus.Image.Brush.Square5px.js",
+        "Filters_Protolus_Image_Filter_Emboss":"../Protolus/Source/Image/Filters/Protolus.Image.Filter.Emboss.js",
+        "Filters_Protolus_Image_Filter_Laplacian":"../Protolus/Source/Image/Filters/Protolus.Image.Filter.Laplacian.js",
+        "Filters_Protolus_Image_Filter_GaussianBlur":"../Protolus/Source/Image/Filters/Protolus.Image.Filter.GaussianBlur.js",
+        "Filters_Protolus_Image_Filter_Sharpen":"../Protolus/Source/Image/Filters/Protolus.Image.Filter.Sharpen.js",
+        "Filters_Protolus_Image_Filter_HighPass":"../Protolus/Source/Image/Filters/Protolus.Image.Filter.HighPass.js",
+        "Filters_Protolus_Image_Filter_Sobel":"../Protolus/Source/Image/Filters/Protolus.Image.Filter.Sobel.js",
+        "Tools_Protolus_Image_Tool_Clone":"../Protolus/Source/Image/Tools/Protolus.Image.Tool.Clone.js",
+        "Tools_Protolus_Image_Tool_Paintbrush":"../Protolus/Source/Image/Tools/Protolus.Image.Tool.Paintbrush.js",
+        "Tools_Protolus_Image_Tool_Eraser":"../Protolus/Source/Image/Tools/Protolus.Image.Tool.Eraser.js",
+        "Tools_Protolus_Image_Tool_Paintbucket":"../Protolus/Source/Image/Tools/Protolus.Image.Tool.Paintbucket.js",
+        "Tools_Protolus_Image_Tool_Eyedropper":"../Protolus/Source/Image/Tools/Protolus.Image.Tool.Eyedropper.js",
+        "Operations_Protolus_Image_Operation_BrightnessContrast":"../Protolus/Source/Image/Operations/Protolus.Image.Operation.BrightnessContrast.js",
+        "Operations_Protolus_Image_Operation_Negative":"../Protolus/Source/Image/Operations/Protolus.Image.Operation.Negative.js"
+    },
+    "dependency":[
+        "protolus-init"
+    ]
+}

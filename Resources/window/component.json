@@ -1,0 +1,10 @@
+{
+    "resource" :{
+        "window" : "baseBox.js",
+        "lightbox" : "baseBox.lightBox.js",
+        "popup" : "Popup.js"
+    },
+    "dependency":[
+        "mootools"
+    ]
+}
