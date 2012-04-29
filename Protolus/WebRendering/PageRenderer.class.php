@@ -247,10 +247,7 @@ class PageRenderer{
             }
         }
         $assigned_group = $options[$selected_index];
-        //echo('[assigned group = '.$assigned_group.']');
-        //exit();
         setcookie($group, $assigned_group, strtotime("+10 years"), '/');
-        //echo('['.$r.']:'.$assigned_group.':'.print_r($options, true));
         if(isset(DefaultTable::$user_id) && DefaultTable::$user_id != 0){
             $group_assignment = new ABUserTestGroup();
             $group_assignment->set('user_id', DefaultTable::$user_id);

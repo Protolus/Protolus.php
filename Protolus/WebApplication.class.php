@@ -7,7 +7,6 @@ class UploadedFile{
 
     public function exists(){
         $res = array_key_exists($this->name, $_FILES);
-        //echo('[key: '.$this->name.' : '.($res?'TRUE':'FALSE').']');
         return $res;
     }
 
@@ -48,12 +47,19 @@ class WebApplication{
     public static function requireConfiguration($fileName, $dir = null){
         if($dir == null) $dir = WebApplication::$configuration_directory;
         try{
-            $path = $dir.$fileName.'.conf';
-            //PageRenderer::configuration($fileName); //we're going to skip the lazy-load
-            Formats::register($dir.$fileName.'.conf');
-            return true;
+            if(file_exists($dir.$fileName.'.private.json')){
+                $path = $dir.$fileName.'.private.json';
+                Formats::register($path, 'json');
+                return true;
+            }
+            if(file_exists($dir.$fileName.'.conf')){
+                $path = $dir.$fileName.'.conf';
+                Formats::register($path);
+                return true;
+            }
+            throw new Exception('Configuration\''.$fileName.'\' does not exist!');
         }catch(Exception $ex){
-            echo('Conf load error:'.$ex->getMessage());
+            Logger::log('Conf load error:'.$ex->getMessage());
             return false;
         }
     }
@@ -141,9 +147,21 @@ class WebApplication{
         $value = false;
         $namePieces = explode('.', $name);
         $node = null;
-        //echo('<h2>'.$name.'</h2><textarea>'.print_r(Formats::$registry['conf'], true).'</textarea>');
         foreach(Formats::$registry['conf'] as $confName=>$configuration){
             $node = Formats::get($confName, 'conf');
+            $in = false;
+            foreach($namePieces as $piece){
+                if(is_array($node) && array_key_exists($piece, $node)){
+                    $node = &$node[$piece];
+                    $in = true;
+                }else{
+                    continue;
+                }
+            }
+            if($in) $value = $node;
+        }
+        foreach(Formats::$registry['json'] as $confName=>$configuration){
+            $node = Formats::get($confName, 'json');
             $in = false;
             foreach($namePieces as $piece){
                 if(is_array($node) && array_key_exists($piece, $node)){
@@ -162,13 +180,10 @@ class WebApplication{
         $value = false;
         $namePieces = explode('.', $name);
         $node = null;
-        //echo('<h2>'.$name.'</h2><textarea>'.print_r(Formats::$registry['conf'], true).'</textarea>');
         $results = array();
         foreach(Formats::$registry['conf'] as $confName=>$configuration){
             foreach($configuration as $index=>$section){
                 if(substr($index, 0, strlen($prefix)) == $prefix) $results[substr($index, strlen($prefix), (strlen($index) - strlen($prefix)) )] = $section;
-                //echo($index.':section<br/>');
-                //print_r($section);
             }
         }
         return $results;
@@ -213,6 +228,14 @@ class WebApplication{
             return false;
         }
     }
+    
+    public static function getShell($key){
+        if(array_key_exists($key, $_ENV)){
+            return $_ENV[$key];
+        }else{
+            return false;
+        }
+    }
 
     public static function getGet($key){
         if(array_key_exists($key, $_GET)){
@@ -224,7 +247,6 @@ class WebApplication{
     
     public static function redirect($location){
         if(!PageRenderer::$dataCall){ //if this is a data call redirecting would be bad form
-            echo($location."<br/>\n");
             if(strpos($location, '://') !== false){ //has protocol
             }else{
                 if(substr($location, 0, 1) != '/') $location = '/'.$location;
@@ -273,5 +295,3 @@ class WebApplication{
         }
     }
 }
-
-?>

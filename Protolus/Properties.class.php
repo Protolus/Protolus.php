@@ -28,11 +28,9 @@
             if($this->fileName){
                 $handle = fopen ($this->fileName, "r");
                 $contents = fread ($handle, filesize ($this->fileName));
-                //echo($contents);
                 fclose ($handle);
                 $lines = explode($this->lineEnding, $contents);
                 for ($i = 0; $i < count($lines); $i++){
-                    //echo("line: ".$line."<br/>")
                     $values = explode("=", $lines[$i]);
                     if(count($values) > 2) $pred = $this->predicate($values);
                     else if(count($values) > 1) $pred = $values[1];
@@ -43,6 +41,7 @@
                 //empty property
                 echo("I/O ERROR: Properties file \"$this->fileName\" not found.<br />");
                 echo("--DIRECTORY---<br />".$this->printDirectory($this->fileName)."---------");
+                exit();
             }
         }
         
@@ -74,7 +73,6 @@
     
         function getProperty($name){
             if(isset($this->data[$name]) && $this->data[$name] != ""){
-                //echo('|');
                 return $this->data[$name];
             }
             else return null;
@@ -142,4 +140,3 @@
         }
 
     }
-?>

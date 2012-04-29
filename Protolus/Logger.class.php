@@ -59,10 +59,6 @@ class Logger{
         }
         $thisTime = Logger::processing_time($start_time);
         $textPrefix = '['.number_format($thisTime, 3).'s total, '.number_format($thisTime-Logger::$lastTime, 3).'s block]['.Logger::getTraceSummary($backtrace).']';
-        if(is_array(Logger::$logFile)){
-            print_r(Logger::$logFile);
-            exit();
-        }
         $phpsucks = explode('.', Logger::$logFile);
         //get the file information end(explode('.', Logger::$logFile))
         if(strtolower(end($phpsucks)) == 'html') $linePrefix = '<h4 style="font-size:10px; margin-bottom:-5px;"><b>'.Logger::getTraceSummary($backtrace).'</b></h4>[<b style="display:inline-block">['.number_format($thisTime, 3).'s total, '.number_format($thisTime-Logger::$lastTime, 3).'s block]</b>]';//$linePrefix = $location.'('.$file.') ';
@@ -88,7 +84,6 @@ class Logger{
         if(Logger::$logFile != null && Logger::$logFile != -1){ //required because someone randomly stuck in a hardcoded conf value whether it's set or not, if this ever gets found, this check may be removed
             if(Logger::$fileHandle == null){
                 if(!is_dir(dirname(Logger::$logFile))){
-                    //echo('making '.dirname(Logger::$logFile)); exit();
                     mkdir(dirname(Logger::$logFile), 0777, true);
                 }
                 Logger::$fileHandle = fopen(Logger::$logFile, 'a');
@@ -140,5 +135,3 @@ class Logger{
     }
 
 }
-
-?>

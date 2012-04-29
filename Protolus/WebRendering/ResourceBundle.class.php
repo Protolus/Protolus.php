@@ -29,10 +29,10 @@
                 $resourceString = implode('-', ResourceBundle::resources());
                 if(ResourceBundle::$minify){
                     return '<link origin="protolus" resource="'.$resourceString.'" rel="stylesheet" href="/style/min/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />
-                    <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/min/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+    <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/min/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
                 }else{
                     return '<link origin="protolus" resource="'.$resourceString.'" rel="stylesheet" href="/style/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'" type="text/css" />
-                    <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
+    <script origin="protolus" resource="'.$resourceString.'" type="text/javascript" src="/javascript/'.$resourceString.'?version='.ResourceBundle::$hardcodedVersion.'"></script>'."\n";
                 }
             }else{
                 return ResourceBundle::packageResources(ResourceBundle::allResourceItems(true), ResourceBundle::resources());
@@ -213,4 +213,3 @@
             }
         }
     }
-?>

@@ -4,7 +4,6 @@
         public static $functionalMode = true;
         protected static $database = 'database';
         public static function initialize($options){
-            //echo('options:'.print_r($options, true).'<br/>');
             if(!isset($options['host']) || strtolower($options['host']) == 'localhost'){
                 $connection = new Mongo();
             }else{
@@ -120,7 +119,6 @@
                 if(count($results) == 0) throw new Exception('Key in collection '.$class::$name.' ('.($field==null?$this->primaryKey:$field).') not found('.$id.') with search('.MongoData::$lastQuery.')!');
                 else throw new Exception('Multiple primary keys found, this usually indicates a serious issue('.$id.':'.print_r($results, true).')!');
             }else{
-                //echo(MongoData::$lastQuery.'<br/><br/>');print_r($results);
                 return current($results);
             }
         }
@@ -159,7 +157,6 @@
                 //$db->lastError();
                 return $query[$this->primaryKey];
             }catch(Exception $ex){
-//                echo('Error!('.MongoData::$lastQuery.'):'.$ex->getMessage().'<br/>');
                 echo '<PRE>' . __FILE__ . '>' . __LINE__ . ' ' . ' Error!('.MongoData::$lastQuery.'):'. print_r($ex->getMessage(),true).'</PRE><br/>';
             }
         }

@@ -19,9 +19,12 @@
 
     //require our core loader
     require('./Protolus/bootstrap.php');
+    if(file_exists(dirname(__FILE__).'/../init.php')){
+        require(dirname(__FILE__).'/../init.php'); //this is our local global environment hook
+    }
 
     // hardcoded memcache interface
-    Session::$dataMode = 'memcache';
+    /*Session::$dataMode = 'memcache';
     $mc = new Memcached();
     if (!count($mc->getServerList())) {
         $mc->addServers(array(
@@ -29,7 +32,8 @@
         ));
     }
     new Session($mc);
-    WebApplication::addCache($mc);
+    WebApplication::addCache($mc);*/
+    new Session(); //api based session
 
     //Initialize our datasources (We have no local data)
     //*
@@ -77,9 +81,6 @@
         date_default_timezone_set($timezone);
     }
     
-    if(file_exists(dirname(__FILE__).'/../init.php')){
-        require(dirname(__FILE__).'/../init.php'); //this is our local global environment hook
-    }
     if(!function_exists('defaultPanel')){
         function defaultPanel(){
             return 'index';

@@ -71,4 +71,3 @@ class Codec{
         return trim(mdecrypt_generic($mcrypt_link, base64_decode($value)));
     }
 }
-?>

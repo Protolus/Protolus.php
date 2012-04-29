@@ -14,6 +14,7 @@
             //todo: detect link type
             Session::$link = $dblink;
             if(Session::$instance == null){
+                Logger::log(Session::$appMode.' '.Session::$dataMode.' session handler started.');
                 switch(Session::$appMode){
                     case 'php':
                         Session::$sessionID = session_name();
@@ -29,22 +30,31 @@
                         session_set_cookie_params( (time() + Session::$lifetime), '/', WebApplication::getConfiguration('application.cookie_domain'));
                         session_start();
                         break;
+                    case 'api':
+                        Session::$link = new APISession();
+                        // drop through to custom handler
                     case 'custom':
                         $this->session_id = WebApplication::getCookie(Session::$sessionID);
                         $data = $this->read($this->session_id);
+                        //echo('['.$this->session_id.':'.print_r($data, true).']');
                         if(!empty($this->session_id) && $data !== true && is_array($data)){
-                            //echo('read something!'.print_r($data, true));
                             $this->internalValues = $data;
                         }else{
                             $this->session_id = Data::generateUUID();
                             Logger::log('Initialized new Session ID['.$this->session_id.']');
-                            //echo('Data:'.print_r($data, true));
                             WebApplication::setCookie(Session::$sessionID, $this->session_id);
+                            //echo('['.Session::$sessionID.' : '.$this->session_id.']');
                         }
+                        if(Session::$appMode == 'api' && !Session::$link->get(Session::$sessionID)){
+                            Session::$link->set(Session::$sessionID, $this->session_id);
+                            //Session::$link->save(); //make sure session sticks
+                        }
+                        //print_r(array(Session::$sessionID, $this->session_id, Session::$link->data));
                         register_shutdown_function( array($this, 'shutdown') );
                         break;
                 }
                 Session::$instance = $this;
+                Session::set('last_access', date ("Y-m-d H:i:s", time()));
             }else{
                 throw new Exception('Session already created, only one session instance at a time!');
             }
@@ -84,6 +94,11 @@
                     if($value === null) unset($this->internalValues[$name]);
                     else $this->internalValues[$name] = $value;
                     break;
+                case 'api':
+                    $data = json_decode(Session::$link->get('data'), true);
+                    $data[$name] = $value;
+                    Session::$link->set('data', json_encode($data));
+                    break;
             }
         }
         
@@ -97,11 +112,15 @@
                     if(array_key_exists($name, $this->internalValues)) return $this->internalValues[$name];
                     else return false;
                     break;
+                case 'api':
+                    $data = json_decode(Session::$link->get('data'));
+                    return $data[$name];
+                    break;
             }
         }
 
         public function read( $sid ) { //we do a little special juggling to decode the data from JSON
-            Logger::log('Loading session: '.$sid);
+            Logger::log('Loading session['.Session::$dataMode.']: '.$sid);
             switch(Session::$dataMode){
                 case 'mysql':
                     $sql = 'SELECT * FROM session_table WHERE id = \''.$sid.'\' AND session_time > ' . time( );
@@ -129,12 +148,21 @@
                 case 'memcache':
                     return Session::$link->get($sid);
                     break;
+                case 'api':
+                    try{
+                    Session::$link->load($sid);
+                    }catch(Exception $ex){
+                        Logger::log('EX: '.$ex->getMessage());
+                        echo('[ERROR]');
+                    }
+                    Logger::log('Loaded API session: '.print_r(Session::$link->data, true));
+                    return Session::$link->data;
+                    break;
             }
         }
 
         public function write( $sid, $data ) { //we do a little special juggling to encode the data as JSON
-            Logger::log('Saving session: '.$sid);
-            Logger::log(print_r($data, true));
+            Logger::log('Saving session['.$sid.']:'.json_encode($data));
             //quick clean of ip so no one can poison the db via GLOBAL overload
             preg_match( '/[\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}/', $_SERVER['REMOTE_ADDR'], $match );
             $ip = sizeof( $match ) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
@@ -163,24 +191,20 @@
                     unset($update['_id']);
                     $collection = Session::$link->session_table;
                     $update['session_time'] = time();
-                    //echo('update['.$this->session_id.']: '.print_r($update, true));
                     $res = $collection->update(
                         array('session_id' => $sid),
                         array('$set' => $update),
                         array('upsert' => true)
                     );
-                    //echo('COL['.print_r(Session::$link->lastError(), true).']('.Session::$link->session_table.'):'); print_r($collection);
-                    /*echo('$res = $collection->update(
-                        array(\'session_id\' => '.print_r($this->session_id, true).'),
-                        array(\'$set\' => '.print_r($update, true).'),
-                        array(\'upsert\' => true)
-                    );'); //*/
                     break;
                 case 'memcache':
                     if(is_array($data)) $data = json_encode($data);
-                    //echo('inserting '.$sid.' into '.$data);
                     Session::$link->set($sid, $data, $expiry);
                     break;
+                case 'api':
+                    Session::$link->save();
+                    break;
+                    
             }
         }
 
@@ -227,4 +251,3 @@
             }
         }
     }
-?>

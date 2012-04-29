@@ -64,7 +64,7 @@ class ErrorHandler{
     
     public static function buildStackTrace($indent =''){
         $backtrace = debug_backtrace();
-        print_r($backtrace);
+        //  print_r($backtrace);
         $result='';
         for($lcv=0; $lcv<count($backtrace)+1; $lcv++){
             $trace = $backtrace[$lcv];
@@ -353,4 +353,3 @@ class ErrorHandler{
         return $final_score;
     }
 }
-?>

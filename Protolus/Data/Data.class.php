@@ -36,11 +36,9 @@
             $quoteChars = array('\'', '"');
             $breakingChars = array(' ', '=', '>', '<', '!');
             for($lcv=0; $lcv<strlen($whereClause); $lcv++){
-                //echo('['.$whereClause[$lcv].', '.$quotation.', '.print_r($results, true).', '.print_r($result, true).']');
                 if($inQuote){
                     if($whereClause[$lcv] == $quoteChar){ //close a quote
                         $result[sizeof($result)-1] .= '\''.$quotation.'\'';
-                        //echo('{OUT:'.print_r($result, true).'}');
                         $inQuote = false;
                         $quotation = '';
                     }else{
@@ -67,7 +65,6 @@
                     }
                     if(in_array($whereClause[$lcv], $quoteChars)){ //open a quote
                         $quoteChar = $whereClause[$lcv];
-                        //echo('{IN}');
                         $inQuote = true;
                         $quotation = '';
                     }else{
@@ -206,7 +203,6 @@
             $query = $options['query']?$options['query']:'1';
             $class = $options['class'];
             $fieldType = strtolower($object->type($column));
-            //echo('['.$column.' : '.$fieldType.':'.print_r($options, true).']');
             switch($fieldType){
                 case 'binary' :
                 case 'integer' :
@@ -259,7 +255,6 @@
                         ' '.(($fieldType == 'instant' && $class)?'class="'.$class.'"':'').'></input>';
                 }
             }
-            //echo('['.htmlentities($html).']');
             return $html;
         }
         
@@ -318,12 +313,8 @@
         }
         
         public function HTML($separator = '<br/>',  $column = false, $action = false){
-            //print_r($this->options);
-            //print_r(Data::$core_fields);
-            //if($method == 'post' || $method == 'get')$method_string = 'method="'.$method.'"';
             if($action) $action_string = 'action="'.$action.'"';
             if($column){
-                //echo($column.']');
                 return Data::HTMLField($column, self::getFieldOptions($field, $this), $this);
             }else{
                 $cn = get_class($this);
@@ -365,7 +356,6 @@
         }
         
         public function option($column, $name){
-            //echo('asddfasdsa'); print_r($this->options); echo($column); exit();
             if( ($options = $this->options[strtolower($column)]) && ($option = $options[$name]) ){
                 return $option;
             }
@@ -376,14 +366,16 @@
         }
         
         public function load($id, $field=null){
-            $this->isNew = false;
-            return $this->performLoad($id, $field);
+            $res = $this->performLoad($id, $field);
+            if($res) $this->isNew = false;
+            return $res;
         }
         
         public function save(){
             $this->checkInitialization();
+            $res = $this->performSave();
             $this->isNew = false;
-            return $this->performSave();
+            return $res;
         }
         
         public function increment($key, $amount=1){

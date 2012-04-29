@@ -48,6 +48,7 @@
 	            }
 	            if(!mysql_select_db($dbname, $link)){
 	                echo('database '.$dbname.' could not be selected!');
+	                exit();
 	            }
 	        }
 	        if (!$link){
@@ -103,7 +104,6 @@
                 $discText = array();
                 foreach($discriminants as $discriminant){
 					$key = $discriminant[0];
-					//echo('[D:'.$object.':'.print_r($discriminant, true).', '.print_r($dummyObject::$fields, true).']');
 					if(!in_array($key, $dummyObject::$fields) && ! MySQLData::isMetaField($key)) continue;
 					$value = $discriminant[2];
 					if(is_string($value) && (substr($discriminant[2], 0, 1) != '\'' && substr($discriminant[2], strlen($discriminant[2])-1, 1) != '\'')){
@@ -121,6 +121,7 @@
             }catch(Exception $ex){
                 Logger::log('There was a MySQL error['.$ex->getMessage().']');
                 echo($ex->getMessage());
+                exit();
             }
         }
         
@@ -220,10 +221,6 @@
 
 			if(count($res) == 1){
 				$row = $res[0];
-				//echo('RESULTS');
-				//print_r($row);
-			    //$this->data = $row;
-			    //echo('[A:'.$this->get('advertiser_id').']');
 			    return $row;
             }else{
                 unset($this->data[$this->primaryKey]); //if there's no data, this row does not exist -> unset primary key
@@ -237,18 +234,14 @@
 			
             if(!$this->get($this->primaryKey)){
 	            //new object
-	            //echo('NEW');
 	            $sql = MySQLData::buildInsertSQLFromObject($this);
-	            //echo('NEW SQL: '.$sql);
 	            MySQLData::executeSQL($sql, $this);
 	            $id = mysql_insert_id();
 	            $this->set($this->primaryKey, $id);
 	        }else{
 	            //updated object
 	            $sql = MySQLData::buildUpdateSQLFromObject($this);
-	            //echo('OLD SQL: '.$sql);
 	            MySQLData::executeSQL($sql, $this);
-	            //echo('OLD');
 	        }
         }
 
@@ -350,9 +343,7 @@
 			if($key != null){
 				$array[$primaryKey] = $key;
 			}
-			//echo('FL:'.print_r($fieldList, true));
 	        foreach ($array as $name=>$value) {
-	           //echo('['.$name.(in_array($name, $fieldList)).' : '.MySQLData::isMetaField($name).' : '.($primaryKey != $name || $key != null).' : '.($name!=$automatic).']');
 	            if( ((in_array($name, $fieldList)) || MySQLData::isMetaField($name)) && ($primaryKey != $name || $key != null) && ($name!=$automatic)){
 	                if (get_magic_quotes_gpc()) {
 	                    $value = stripslashes($array[$name]);
@@ -368,7 +359,6 @@
 	
 
 	        $statement = 'INSERT INTO '.$tableName.' ( '.$names.' ) VALUES ( '.$values.' )';
-		//echo "insert: " . $statement; exit;
 	        return $statement;
 	    }
 	    public static function buildUpdateSQLFromObject($object){ //convienience method for working with objects
@@ -385,7 +375,6 @@
 	
 	    public static function executeSQL($statement, $requestingObject, $database=null, $depth=0){
 	        // /*  <- uncomment to shut off queries and output SQL
-	        //echo('{SQL:'.$statement.'}');
 	        if(MySQLData::$debug){
 	            Logger::log($statement.'<br/>');
 	            $start = Logger::processing_time();

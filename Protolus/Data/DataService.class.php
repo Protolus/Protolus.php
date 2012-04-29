@@ -23,7 +23,6 @@
                     $object->set($location.'.stale_date', time() + $service->minutesDataStaysFresh);
                 }
             }else{
-                //echo('[DATA IS STILL FRESH]');
             }
         }
         function fetch($params = null, $postdata=null){

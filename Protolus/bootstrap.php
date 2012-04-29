@@ -22,10 +22,11 @@
     //allow core classes to be loaded
     Autoloader::register_directory('./Protolus');
     Autoloader::register_directory('./Protolus/WebRendering');
-    if(file_exists('./classes')) Autoloader::register_directory('./classes');
+    if(file_exists('./Classes')) Autoloader::register_directory('./Classes');
     Autoloader::register_directory('./Protolus/Data');
 
     $host = preg_replace('~\.~', '_', WebApplication::get('HTTP_HOST'));
+    $host = WebApplication::getShell('PROTOLUS_MACHINE_TYPE')?WebApplication::getShell('PROTOLUS_MACHINE_TYPE'):'production';
     WebApplication::setGet('hostID', $host);
 
     PageRenderer::$template_directory = 'App/Panels/';

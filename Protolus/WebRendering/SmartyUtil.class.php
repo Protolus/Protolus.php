@@ -233,7 +233,6 @@
                 }
                 $result = PageRenderer::substitute($result, $environment);
             }
-            //echo('|'.$result.'|');
             return $result;
         }
     
@@ -358,7 +357,6 @@
             if( ($object = $smarty->get_template_vars($params['object'])) && is_object($object)){
                 return $object->HTML();
             }
-            //echo('ACK!'.print_r($smarty->get_template_vars(), true));
             exit();
         }
         
@@ -373,7 +371,7 @@
                 }else if(isset($params['field'])){
                     $str .= $params['field'].";";
                 }else{
-                    echo "";
+                    return "";
                 }
     
                 eval("return ".$str);
@@ -388,7 +386,7 @@
                 }
     
             }else{
-                echo "";
+                return "";
             }
     
         }
@@ -414,4 +412,3 @@
             }
         }
     }
-?>

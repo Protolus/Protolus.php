@@ -22,11 +22,9 @@
                 }
             }
             $this->silo = $silo;
-            //echo('[panel:'.$panel_name.', '.$silo.' : '.print_r(Panel::$callStack, true).']');
             $this->rootDirectory = Panel::directoryForSilo($silo);
             if(Panel::isDefined($panel_name, $this->rootDirectory.'Panels/')){
                 $this->name = $panel_name;
-                //echo('[d]');
             }else{
                 throw new Exception('Panel does not exist('.$panel_name.')!');
             }
@@ -104,7 +102,7 @@
                         $can = $this->parent->get_template_vars(substr($pop_var, 0, strpos($pop_var, '.')));
                         $rem = substr($pop_var, strpos($pop_var, '.')+1);
                         while(strpos($rem, '.') !== false){
-                            echo($rem.', ');
+                            //echo($rem.', ');
                             $can = $can[substr($rem, 0, strpos($rem, '.'))];
                             $rem = substr($rem, strpos($rem, '.')+1);
                         }
@@ -215,6 +213,10 @@
                 return PageRenderer::$root_directory.'Silos/'.implode('/Silos/', explode('/', $silo));
             }
         }
+        
+        public static function isRoutable($panel, $dir=null){
+            return Panel::route($panel, $dir)?true:false;
+        }
 
         public static function route($panel, $dir=null){ //consult the compiled routes table
             if($panel == '' || strtolower($panel) == 'index') return false;
@@ -245,10 +247,7 @@
                     $count = 1;
                     if(strpos($selector, ':')){ //if there's a colon, check if we're a range
                         if(preg_match('~^(.*):([ ,0-9]*)$~', $selector, $matches)){
-                            //echo('aaa:');
                             $selector = '(['.$matches[1].']{'.$matches[2].'})';
-                            //print_r($matches);
-                            //exit();
                         }
                     }
                     $matched = false;
@@ -289,4 +288,3 @@
             return false;
         }
     }
-?>
