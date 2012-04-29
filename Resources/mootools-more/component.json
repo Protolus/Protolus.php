@@ -1,0 +1,8 @@
+{
+    "resource" :{
+        "mootools_more":"mootools-more.js"
+    },
+    "dependency":[
+        "mootools-core"
+    ]
+}
