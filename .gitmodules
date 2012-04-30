@@ -4,3 +4,6 @@
 [submodule "Resources/visualization"]
 	path = Resources/visualization
 	url = git@github.com:khrome/Visualization.js.git
+[submodule "Resources/argolus"]
+	path = Resources/argolus
+	url = git@github.com:khrome/Argolus.js.git
