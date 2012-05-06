@@ -1,0 +1,15 @@
+{
+    "application":{
+        "cookie_domain": "demo.protol.us"
+    },
+    "DB:appdata":{
+        "type":"mysql",
+        "database" : "appdata",
+        "host" : "localhost",
+        "user" : "root",
+        "password" : "",
+        "mode":"mysql",
+        "session":"true",
+        "session_hook":"php"
+    }
+}

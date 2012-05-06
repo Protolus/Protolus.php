@@ -4,6 +4,11 @@
 #ErrorDocument 404 test.php?error=404
 #ErrorDocument 500 test.php?error=500
 
+#AuthUserFile /home/jill/.htpasswd
+#AuthType Basic
+#AuthName "Delphi Preview"
+#Require valid-user
+
 # Make sure required options are on
 Options +FollowSymlinks
 RewriteEngine on

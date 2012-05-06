@@ -1,4 +1,10 @@
 <?php
+/*********************************************************************************//**
+ *  Session
+ *====================================================================================
+ * @author Abbey Hawk Sparrow
+ *Session: supports memcache, mongo, mysql and file through a custom hook or PHPs
+ *************************************************************************************/
     class Session{
         public static $instance = null;
         public static $cleanRemoteIP = true;

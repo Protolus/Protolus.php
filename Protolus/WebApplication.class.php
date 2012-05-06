@@ -1,5 +1,11 @@
 <?php
 class UploadedFile{
+/*********************************************************************************//**
+ *  WebApplication
+ *====================================================================================
+ * @author Abbey Hawk Sparrow
+ *An application abstraction, so the app doesn't directly reference any specific server
+ *************************************************************************************/
     protected $name;
     public function  __construct($name){
         $this->name = $name;

@@ -45,7 +45,7 @@
         $allItems = array();
         foreach($resources as $resourceName){
             chdir('../..');
-            $resource = new ResourceBundle($resourceName, Formats::loadFile('Resources/'.$resourceName.'/component.conf', 'conf'));
+            $resource = new ResourceBundle($resourceName, Formats::loadFile('Resources/'.$resourceName.'/component.json', 'json'));
             chdir('min/lib');
             $items = $resource->resourceItems(true);
             foreach($items as $index=>$item){

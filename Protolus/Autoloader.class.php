@@ -1,24 +1,27 @@
 <?php
-// ***********************************************************************************
-// * Autoloader by Abbey Hawk Sparrow
-// ***********************************************************************************
-// * This autoloader takes care of classloading dynamicly as well as maintaining scope
-// * and registration. All you have to do to use it is use the java style _import
-// *  EX: _import('path.to.package.*');
-// * or the path based syntax
-// *  EX: Autoloader::register_directory('./path/to/package/');
-// * multiple copies of a identically named class can exist, but only one can be
-// * loaded during execution, so while this can be helpful when dealing with libraries
-// * which have colliding namespaces, it is no panacea.
-// ***********************************************************************************
-// * KEY FEATURES *
-// ****************
-// * 1) auto-autoload (other than setting your class folders, you do nothing)
-// * 2) namespace compartmentalization (use the same class name over and over)
-// * 3) shorter class/folder hierarchy traversals (get to the right class faster)
-// * 4) allows inline catching of class load errors (no uncatchable fatals)
-// * 5) maximally optimized awesomeness factor (not really, but it sounds nice)
-// ***********************************************************************************
+/*********************************************************************************//**
+ *  Abbey's Autoloader
+ *====================================================================================
+ * @author Abbey Hawk Sparrow
+ *This autoloader takes care of classloading dynamicly as well as maintaining scope
+ *and registration. All you have to do to use it is use the java style _import
+ *~~~~~~~~~~~~~{.php}
+ * _import('path.to.package.*'); 
+ *~~~~~~~~~~~~~
+ * or the path based syntax
+ *~~~~~~~~~~~~~{.php}
+ * Autoloader::register_directory('./path/to/package/'); 
+ *~~~~~~~~~~~~~
+ *multiple copies of a identically named class can exist, but only one can be
+ *loaded during execution, so while this can be helpful when dealing with libraries
+ *which have colliding namespaces, it is no panacea.
+ *
+ *- auto-autoload (other than setting your class folders, you do nothing)
+ *- namespace compartmentalization (use the same class name over and over)
+ *- shorter class/folder hierarchy traversals (get to the right class faster)
+ *- allows inline catching of class load errors (no uncatchable fatals)
+ *- maximally optimized awesomeness factor (not really, but it sounds nice)
+ *************************************************************************************/
 
 function _import($namespace){ //enforces a naming convention of <class>.classes.php
     $ns_parts = explode('.', $namespace);

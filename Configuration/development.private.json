@@ -1,0 +1,17 @@
+{
+    "application":{
+        "mode" : "debug",
+        "cookie_domain": "protolus.dev"
+    },
+    "DB:appdata":{
+        "type":"mysql",
+        "database" : "appdata",
+        "host" : "localhost",
+        "user" : "root",
+        "password" : "",
+        "mode":"mysql",
+        "session":"true",
+        "session_hook":"php"
+    }
+}
+

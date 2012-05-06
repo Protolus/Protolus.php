@@ -1,18 +1,10 @@
 <?php
-// ***********************************************************************************
-// * Protolus Initialize by Abbey Hawk Sparrow
-// ***********************************************************************************
-// * This script assumes it's being included one level up, in the project directory
-// ***********************************************************************************
-
-    /* changes:
-            add access control to 'Endpoints'
-            class based HTML wrapper for 3rd party renderers
-            child based folder descention
-            level1->children->level2
-                -basic feature requirements (SSL, Region, Login, etc. )
-            as a convention prefix all ajax with 'get_' or 'set_' or 'access_'?
-     */
+/*********************************************************************************//**
+ *  Protolus Initialize
+ *====================================================================================
+ * @author Abbey Hawk Sparrow
+ *This script assumes it's being included one level up, in the project directory
+ *************************************************************************************/
      //things to add:
      //comments in dev && debug mode to show which panel is being rendered
      // try/catch this whole thing

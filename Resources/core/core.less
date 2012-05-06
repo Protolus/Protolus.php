@@ -1,11 +1,6 @@
-// global styles
-
-//import base less environment
-@import "../less-base/macros";
-@import "../less-base/colors";
-@import "../less-base/geometry";
-
-//reset browser styling
+// import Protolus less base macro environment
+@import "../less-base/include-base";
+// reset browser styling
 @import "../less-base/reset";
 
 body{
@@ -13,9 +8,18 @@ body{
     font-family: helvetica;
     font-weight: 100;
 }
+@shadowDistance : 10px;
+@shadowOpacity : 0.5;
 
 .right{
     float:right;
+}
+
+.logo{
+    display: inline-block;
+    .rounded(180px);
+    margin: 100px;
+    .shadowed(@shadowDistance, @shadowOpacity);
 }
 
 hr{
@@ -39,76 +43,29 @@ hr{
 }
 
 h1{
-    font-size: 1.3em;
-    margin-left:auto;
-    margin-right:auto;
-    margin:20px;
-    text-align: center;
-    .monochromeForeground(@darkBase, base);
-    font-weight:100;
-    display:block;
-    padding-top:10px;
-    &.saletags{
-        margin-top:50px;
-        margin-bottom:0px;
-        background-size:120px 60px;
-        background-image: url(/Resources/core/saletagsswoosh.png);
-        background-position:590px 0px;
-        background-repeat: no-repeat;
-        font-size: 1.7em;
-    }
-    &.break:after{
-        position:relative;
-        display:block;
-        margin-top: 18px;
-        margin-left:auto;
-        margin-right:auto;
-        margin-bottom: 20px;
-        height:0px;
-        content:'';
-        width:300px;
-        border: 1px dashed darken(@lightBase, 20%);
-        border-bottom-color: lighten(@lightBase, 20%);
-    }
+    font-size: 3em;
+    font-weight:800;
+    margin-top: 100px;
 }
 
-.hidden{
-    visibility:hidden;
-    position:absolute;
+p{
+    .monochromeBackground(@darkBase, base);
+    .monochromeForeground(@darkBase, light-four);
+    padding: 30px;
+    .rounded(20px);
+    .shadowed(10px, 0.5);
+    line-height: 1.3em;
+    text-align: left;
 }
 
 // HEADER
 #protolus_root{
     //z-index : 10;
     width : 960px;
+    text-align: center;
     margin-left: auto;
     margin-right: auto;
 }
-
-.banner{
-    width : 100%;
-    background-image:url(/Resources/core/stripe.png);
-    border-bottom: 3px solid @darkBase;
-    .monochromeBackground(@darkBase, base);
-    .monochromeForeground(@darkBase, light-four);
-    height : 78px;
-    .right{
-        margin-top : 1.5em;
-        .vr{
-            border: 1px solid @darkBase;
-            border-right-color: lighten(@darkBase, 20%);
-            height:1.5em;
-            margin-bottom:-0.5em;
-            margin-right:5px;
-            width:0px;
-            display: inline-block;
-        }
-        a{
-            text-decoration:none;
-        }
-    }
-}
-
 .vr{
     border: 1px solid darken(@lightBase, 20%);
     border-right-color: lighten(@lightBase, 20%);
@@ -118,86 +75,4 @@ h1{
     width:0px;
     padding:0px;
     display: inline-block;
-}
-
-.r45degree{
-    -webkit-transform: rotate(-45deg);
-    -moz-transform: rotate(-45deg);
-    -ms-transform: rotate(-45deg);
-    -o-transform: rotate(-45deg);
-    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=2);
-}
-
-.button{
-    //.beveledAndDepressed(2px);
-    display : inline-block;
-    .rounded(5px);
-    margin: 1px;
-    font-size: 0.9em;
-    padding:5px;
-    vertical-align: middle;
-    
-    text-decoration : none;
-    &.light{
-        .monochromeBackground(@darkBase, light-four);
-        .monochromeForeground(@lightBase, light-one);
-        //text-shadow: 0px 0px 0px #222222;
-        padding-right: 15px;
-        padding-left: 15px;
-        &.icon{
-            padding-bottom:0px;
-        }
-    }
-    &.dark{
-        background-color:darken(@darkBase, 4%);
-        .monochromeForeground(@darkBase, light-four);
-        //text-shadow: 1px 1px 1px #222222;
-        padding-right: 15px;
-        padding-left: 15px;
-        &:hover{
-            background-color:darken(@darkBase, 6%);
-        }
-    }
-    &:active{
-        .beveled(1px);
-    }
-    &.search{
-        margin-top:-25px;
-        height:45px;
-        background-image:url(/Resources/core/stripe.png);
-        width:32px;
-        padding-right:26px;
-        padding-left:26px;
-    }
-}
-
-.icon{
-    &.dropdown{
-        padding:0px;
-        height: 1.7em;
-        line-height: 1.7em;
-        margin:0px;
-        margin-right: 10px;
-        padding-left:5px;
-        padding-right:5px;
-        &.closed{
-            &:after{
-                content:'\25BE';
-                border: 1px solid @darkBase;
-                border-width: 0px 0px 0px 1px;
-                width: 10px;
-                margin-left:5px;
-                padding-left:5px;
-                padding-right:5px;
-            }
-        }
-        &.dark:after{
-            .monochromeForeground(@darkBase, light-two);
-        }
-        &.open:after{
-            content:'| \25B4';
-            display:inline-block;
-            float:right;
-        }
-    }
 }
