@@ -14,7 +14,7 @@
         "protolus_file_uploader":"../Protolus/Source/Core/Protolus.FileUploader.js",
     },
     "dependency":[
-        "protolus-init",
+        "protolus_init",
         "midas"
     ]
 }

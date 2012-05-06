@@ -32,6 +32,6 @@
         "Operations_Protolus_Image_Operation_Negative":"../Protolus/Source/Image/Operations/Protolus.Image.Operation.Negative.js"
     },
     "dependency":[
-        "protolus-init"
+        "protolus_init"
     ]
 }

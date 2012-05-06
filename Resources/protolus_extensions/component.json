@@ -11,6 +11,6 @@
         "String_extensions":"../Protolus/Source/ExtensionsString.extensions.js"
     },
     "dependency":[
-        "mootools"
+        "mootools_core"
     ]
 }
