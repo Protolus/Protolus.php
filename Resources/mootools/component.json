@@ -1,0 +1,7 @@
+{
+    "resource" :{},
+    "dependency":[
+        "mootools_core",
+        "mootools_more"
+    ]
+}

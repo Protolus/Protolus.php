@@ -11,7 +11,7 @@
         "protolus_page":"../Protolus/Source/Core/Protolus.Page.js",
         "protolus_page_renderer":"../Protolus/Source/Core/Protolus.PageRenderer.js",
         "protolus_model":"../Protolus/Source/Core/Protolus.Modal.js",
-        "protolus_file_uploader":"../Protolus/Source/Core/Protolus.FileUploader.js",
+        "protolus_file_uploader":"../Protolus/Source/Core/Protolus.FileUploader.js"
     },
     "dependency":[
         "protolus_init",

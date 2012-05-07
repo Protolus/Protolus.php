@@ -215,7 +215,10 @@ class PageRenderer{
         }
         PageRenderer::revertOutput();
 		if(!PageRenderer::$return_mode){
-			echo $result.'<!-- rendered in '.number_format(Logger::processing_time($start_time), 3).'s-->';
+			($mode = WebApplication::getConfiguration('application.mode')) || $mode = 'steady';
+		    ($machineName = WebApplication::getGet('machineName')) || $mode = 'unknown_machine';
+		    ($machine = WebApplication::getGet('environmentType')) || $mode = 'unknown_mode';
+			echo $result.'<!-- rendered in '.number_format(Logger::processing_time($start_time), 3).'s on '.$machineName.' in '.$mode.' mode using '.$machine.' settings -->';
 		}else{
 			if(preg_match("~<title>(.*?)</title>~", $result, $matches)) PageRenderer::$title = $matches[1];
 			return $result;

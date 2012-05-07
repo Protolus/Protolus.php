@@ -236,11 +236,7 @@ class WebApplication{
     }
     
     public static function getShell($key){
-        if(array_key_exists($key, $_ENV)){
-            return $_ENV[$key];
-        }else{
-            return false;
-        }
+        return getenv($key);
     }
 
     public static function getGet($key){

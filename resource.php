@@ -24,7 +24,7 @@
     if(!file_exists(dirname($fileName))) mkdir(dirname($fileName));
     $mostRecentTime = 0;
     foreach($resources as $resourceName){
-        $time = filemtime('Resources/'.$resourceName.'/component.conf');
+        $time = filemtime('Resources/'.$resourceName.'/component.json');
         if($mostRecentTime < $time) $mostRecentTime = $time;
     }
     $rootDir = getcwd();
@@ -47,7 +47,8 @@
             chdir('../..');
             $resource = new ResourceBundle($resourceName, Formats::loadFile('Resources/'.$resourceName.'/component.json', 'json'));
             chdir('min/lib');
-            $items = $resource->resourceItems(true);
+            $items = $resource->resourceItems(true, true);
+            //print_r($resources); print_r($items); exit();
             foreach($items as $index=>$item){
                 switch(strtolower(WebApplication::getGet('type'))){
                     case 'js' :
@@ -86,7 +87,7 @@
         Minify::serve('Files', array(
             'files'  => $allItems,
             'maxAge' => 86400
-        ));
+        ));//*/
     }else{
         $res = '';
         foreach($allItems as $item){

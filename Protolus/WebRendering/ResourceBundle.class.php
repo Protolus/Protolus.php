@@ -121,11 +121,12 @@
             if(array_key_exists('resource', $options)) foreach($options['resource'] as $option){
                 $this->resources[] = $option;
             }
+            //echo('[DDDD:'.print_r($options, true).']');
             if(array_key_exists('dependency', $options)) foreach($options['dependency'] as $option){
                 $this->dependencies[] = $option;
                 //try{
                     if(!array_key_exists($option, ResourceBundle::$packages)){
-                        new ResourceBundle($option, Formats::loadFile('Resources/'.$option.'/component.conf', 'conf'));
+                        new ResourceBundle($option, Formats::loadFile('Resources/'.$option.'/component.json', 'json'));
                         PageRenderer::$component_registry[] = $option;
                     }
                 //}catch(Exception $ex){
@@ -135,7 +136,9 @@
                 $this->html[] = $option;
             }
             $this->name = $name;
-            ResourceBundle::$packages[$this->name] = $this;
+            if(array_key_exists('resource', $options) && count($options['resource']) > 0){
+                ResourceBundle::$packages[$this->name] = $this;
+            }
         }
         
         public static function commonPath($stringArray){
@@ -151,7 +154,7 @@
             return $longest;
         }
         
-        public function resourceItems($fullPath=false){
+        public function resourceItems($fullPath=false, $recursive=false){
             $result = array();
             foreach($this->resources as $name => $component){
                 //foreach($component as $item){
@@ -162,7 +165,6 @@
                     }
                 //}
             }
-            //print_r($result);
             return $result;
         }
         
@@ -204,10 +206,16 @@
             try{
                 if(ResourceBundle::$packages == null) ResourceBundle::$packages = array();
                 if(!array_key_exists($component, ResourceBundle::$packages)){
-                    $load = Formats::loadFile('Resources/'.$component.'/component.conf', 'conf');
-                    new ResourceBundle($component, $load);
+                    $load = Formats::loadFile('Resources/'.$component.'/component.json', 'json');
+                    //echo("[C:".$component."]");
+                    $bundle = new ResourceBundle($component, $load);
+                    //echo("[C:".$component.", ".print_r($load, true)."]");
+                    foreach($bundle->dependencies as $dependency){
+                        //echo("[DEP(".$component."):".$dependency."]");
+                        ResourceBundle::req($dependency);
+                    }
                     PageRenderer::$component_registry[] = $component;
-                }
+                }//else echo("[DEPSAT(".$component.", ".print_r(array_keys(ResourceBundle::$packages), true).")]");
             }catch(Exception $ex){
                 return false;
             }

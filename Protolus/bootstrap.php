@@ -26,15 +26,18 @@
     Autoloader::register_directory('./Protolus/Data');
 
     $host = preg_replace('~\.~', '_', WebApplication::get('HTTP_HOST'));
-    $host = WebApplication::getShell('PROTOLUS_MACHINE_TYPE')?WebApplication::getShell('PROTOLUS_MACHINE_TYPE'):'production';
+    $machine = WebApplication::getShell('PROTOLUS_MACHINE_TYPE')?WebApplication::getShell('PROTOLUS_MACHINE_TYPE'):'production';
+    $machineName = exec('hostname');
     WebApplication::setGet('hostID', $host);
+    WebApplication::setGet('environmentType', $machine);
+    WebApplication::setGet('machineName', $machineName);
 
     PageRenderer::$template_directory = 'App/Panels/';
     PageRenderer::$wrapper_directory = 'App/Panels/';
     PageRenderer::$wrapper_controller_directory = 'App/Controllers/';
-    PageRenderer::$compile_directory = '/tmp/'.$host.'/_compile';
+    PageRenderer::$compile_directory = '/tmp/'.$machine.'/'.$host.'/_compile';
     if(!file_exists(PageRenderer::$compile_directory)) mkdir(PageRenderer::$compile_directory, 0777, true);
-    PageRenderer::$cache_directory = '/tmp/'.$host.'/_cache';
+    PageRenderer::$cache_directory = '/tmp/'.$machine.'/'.$host.'/_cache';
     if(!file_exists(PageRenderer::$compile_directory)) mkdir(PageRenderer::$compile_directory, 0777, true);
     if(!file_exists(PageRenderer::$cache_directory)) mkdir(PageRenderer::$cache_directory, 0777, true);
     PageRenderer::$panel_directory = 'App/Panels/';
@@ -44,7 +47,7 @@
     //PageRenderer::registerConfigurationDirectory('Core/Configuration', array('conf'));
     $configDirectory = 'Configuration/';
     WebApplication::requireConfiguration('default', $configDirectory) or die('The Web Application defaults have gone away!');
-    WebApplication::requireConfiguration($host, $configDirectory) or die('The Web Application preferences('.$host.'.conf) have gone away!');
+    WebApplication::requireConfiguration($machine, $configDirectory) or die('The Web Application preferences('.$macine.'.private.json) have gone away!');
     WebApplication::requireConfiguration('panel_mappings', 'App/') or die('The Web Application has no panel map!');
     $mode = WebApplication::getConfiguration('application.mode');
 

@@ -1,14 +1,14 @@
 {
     "resource" :{
-        "Array_extensions":"../Protolus/Source/ExtensionsArray.extensions.js",
-        "Element_extensions":"../Protolus/Source/ExtensionsElement.extensions.js",
-        "NodeList_extensions":"../Protolus/Source/ExtensionsNodeList.extensions.js",
-        "Function_extensions":"../Protolus/Source/ExtensionsFunction.extensions.js",
-        "Number_extensions":"../Protolus/Source/ExtensionsNumber.extensions.js",
-        "Object_extensions":"../Protolus/Source/ExtensionsObject.extensions.js",
-        "Request_Pool":"../Protolus/Source/ExtensionsRequest.Pool.js",
-        "Request_Stable":"../Protolus/Source/ExtensionsRequest.Stable.js",
-        "String_extensions":"../Protolus/Source/ExtensionsString.extensions.js"
+        "Array_extensions":"../Protolus/Source/Extensions/Array.extensions.js",
+        "Element_extensions":"../Protolus/Source/Extensions/Element.extensions.js",
+        "NodeList_extensions":"../Protolus/Source/Extensions/NodeList.extensions.js",
+        "Function_extensions":"../Protolus/Source/Extensions/Function.extensions.js",
+        "Number_extensions":"../Protolus/Source/Extensions/Number.extensions.js",
+        "Object_extensions":"../Protolus/Source/Extensions/Object.extensions.js",
+        "Request_Pool":"../Protolus/Source/Extensions/Request.Pool.js",
+        "Request_Stable":"../Protolus/Source/Extensions/Request.Stable.js",
+        "String_extensions":"../Protolus/Source/Extensions/String.extensions.js"
     },
     "dependency":[
         "mootools_core"
