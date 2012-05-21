@@ -21,4 +21,4 @@ What can it do for my logic?
  - View centric logic: take care of smaller, atomic actions based on a view leading to more reusable units
  - Get rid of it: less code in your controllers, reduce your code by a factor of 10 with all the benefits that implies
 
-Skip the bullshit.
+[Skip the bullshit](http://wiki.protol.us/).
