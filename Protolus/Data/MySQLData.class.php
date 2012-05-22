@@ -113,7 +113,7 @@
                 }
 				$whereClause = implode(' and ', $discText);
 				$sql = MySQLData::buildSelectionStatement( $tableName, $whereClause, $returnFields);
-                $res = MySQLData::executeSQL($sql);
+                $res = MySQLData::executeSQL($sql, null, $db);
 				foreach($res as $row){
 	                $results[] = $row;	
 				}
