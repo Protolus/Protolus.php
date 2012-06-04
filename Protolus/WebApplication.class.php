@@ -222,7 +222,7 @@ class WebApplication{
         $namePieces = explode('.', $name);
         $node = null;
         $results = array();
-        foreach(Formats::$registry['conf'] as $confName=>$configuration){
+        foreach(Formats::$registry['json'] as $confName=>$configuration){
             foreach($configuration as $index=>$section){
                 if(substr($index, 0, strlen($prefix)) == $prefix) $results[substr($index, strlen($prefix), (strlen($index) - strlen($prefix)) )] = $section;
             }

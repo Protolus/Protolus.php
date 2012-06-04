@@ -1,4 +1,167 @@
 <?php
+    class WhereParser{
+    public function parse($query){
+        return $this->parse_where($query);
+    }
+    
+    protected function parse_where($clause){
+        $blocks = $this->parse_blocks($clause);
+        $parsed = array();
+        $this->parse_compound_phrases($blocks, $parsed);
+        $parser = $this->parse_discriminant;
+        $func = function($value) use(&$func, $parser) {
+            if(is_array($value)) return array_map($func, $value);
+            else{
+                if(in_array($value, array('AND', 'OR', 'and', 'or', '&&', '||'))){
+                    return array(
+                    'type' => 'conjunction',
+                    'value' => $value
+                    );
+                }else{ //parse statement
+                    $key = '';
+                    $operator = '';
+                    $val = '';
+                    $inquote = false;
+                    for($lcv = 0; $lcv < strlen($value); $lcv++){
+                        $char = $value[$lcv];
+                        if($inquote){
+                            if($char == $inquote){
+                                $inquote = false;
+                                continue;
+                            }
+                            if($operator) $val .= $char;
+                            else $key .= $char;
+                            continue;
+                        }
+                        if($char == '\'' || $char == '"'){
+                            $inquote = $char;
+                            continue;
+                        }
+                        if(strstr('><=!', $char)){
+                            $operator .= $char;
+                            continue;
+                        }
+                        if($operator) $val .= $char;
+                        else $key .= $char;
+                    }
+                    return array(
+                        'type' => 'expression',
+                        'key' => $key,
+                        'operator' => $operator,
+                        'value' => $val
+                    );
+                }
+            }
+        };
+
+        $result = array_map($func, $parsed);
+        return $result;
+    }
+    
+    protected function parse_discriminant($text){
+        $key = '';
+        $operator = '';
+        $value = '';
+        $inquote = false;
+        for($lcv = 0; $lcv < strlen($text); $lcv++){
+            $char = $text[$lcv];
+            if($inquote){
+                if($char == $inquote){
+                    $inquote = false;
+                    continue;
+                }
+            }
+            if($char == '\'' || $char == '"'){
+                $inquote = $char;
+                continue;
+            }
+            if(strstr('><=!', $char)){
+                $operator .= $char;
+                continue;
+            }
+            if($operator) $value .= $char;
+            else $key .= $char;
+        }
+        return array(
+            'type' => 'expression',
+            'key' => $key,
+            'operator' => $operator,
+            'value' => $value
+        );
+    }
+    
+    protected function parse_blocks($parsableText){
+        $env = array();
+        $b_open = '(';
+        $b_close = ')';
+        $t_close = '\'';
+        $t_open = '\'';
+        $depth = 0;
+        $text_mode = false;
+        $text = '';
+        $root = &$env;
+        $stack = array();
+        for($lcv = 0; $lcv < strlen($parsableText); $lcv++){
+            $char = $parsableText[$lcv];
+            if($text_mode){
+                $text .= $char;
+                if($char == $t_close){
+                    $text_mode = false;
+                }
+                continue;
+            }
+            if($char == $t_open){
+                $text .= $char;
+                $text_mode = true;
+                continue;
+            }
+            if($char == $b_open){
+                if($text != '') $env[] = $text;
+                $nextLevel = array();
+                $env[] = &$nextLevel;
+                array_push($stack, $env);
+                $env = &$nextLevel;
+                $text = '';
+                continue;
+            }
+            if($char == $b_close){
+                if($text != '') $env[] = $text;
+                unset($env);
+                $env = array_pop($stack);
+                $text = '';
+                continue;
+            }
+            $text .= $char;
+        }
+        if($text != '') $env[] = $text;
+        return $root;
+    }
+    
+    protected function parse_compound_phrases($array, &$result){
+        foreach($array as $item){
+            if(is_array($item)){
+                $results = array();
+                $this->parse_compound_phrases($item, $results);
+                $result[] = $results;
+            }else if(is_string($item)) $result = array_merge($result, $this->parse_compound_phrase($item));
+        }
+    }
+    
+    protected function parse_compound_phrase($clause){
+        $parts = preg_split('/(?= [Aa][Nn][Dd] ?| [Oo][Rr] ?|\|\||&&)/', $clause);
+        $results = array();
+        foreach($parts as $part){
+            $results = array_merge($results, preg_split('/(?<= [Aa][Nn][Dd] | [Oo][Rr] |\|\||&&)/', $part));
+        }
+        foreach($results as $key=>$value){
+            if(!trim($value)) unset($results[$key]);
+            else $results[$key] = trim($results[$key]);
+        }
+        return array_values($results);
+        
+    }
+}
+
     abstract class Data{
         //protected static function performSearch($subject, $predicate);
         //protected static function initialize($options);
@@ -11,6 +174,7 @@
         public static $empty_field_mode = 'null'; //null, notice, exception
         public static $registry = array(); // uuid, integer
         public static $core_fields = array('id', 'record_status', 'modification_time', 'creation_time', 'modified_by');
+        public static $where_parser = false;
         public static $core_options = array(
             'id' => array(
                 'type' => 'integer',
@@ -28,17 +192,22 @@
             )
         );
         protected static function parseWhere($whereClause){
-            $results = array();
+            if(!Data::$where_parser) Data::$where_parser = new WhereParser();
+            return Data::$where_parser->parse($whereClause);
+            /*$results = array();
             $inQuote = false;
             $quoteChar = '';
             $quotation = '';
             $result = array();
             $quoteChars = array('\'', '"');
+            $quoteChars = array('\'', '"');
             $breakingChars = array(' ', '=', '>', '<', '!');
             for($lcv=0; $lcv<strlen($whereClause); $lcv++){
                 if($inQuote){
                     if($whereClause[$lcv] == $quoteChar){ //close a quote
-                        $result[sizeof($result)-1] .= '\''.$quotation.'\'';
+                        //use gettype to detect where quotes need to get added
+                        //$result[sizeof($result)-1] .= '\''.$quotation.'\'';
+                        $result[sizeof($result)-1] .= $quotation;
                         $inQuote = false;
                         $quotation = '';
                     }else{
@@ -71,10 +240,13 @@
                         $result[sizeof($result)-1] .= $whereClause[$lcv];
                     }
                 }
+                //echo('[q:'.$quotation.']');
             }
             if($quotation != '') $result[2] = $quotation;
+            //echo('[QUOTE!]'); exit();
             $results[] = $result;
-            return $results;
+            //print_r($results); exit();
+            return $results;*/
         }
         
         protected static function convertArrayToSearch($datatype, $query){
@@ -153,6 +325,8 @@
                     $search = $query; //Data::convertArrayToSearch($query);
                 }
             }
+            //print_r($search); exit();
+            if($query == null) $search = array();
 			$dummy = new $datatype();
             if(isset($search)){
                 $resultSet = $datatype::performSearch(array(

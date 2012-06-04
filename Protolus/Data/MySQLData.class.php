@@ -11,7 +11,6 @@
 		public $primaryKey = 'id';
 		
         public static function initialize($options){
-	//print_r($options); exit;
 			$server = $options['host'];
 			$login = $options['user'];
 			$password = $options['password'];
@@ -93,27 +92,58 @@
 	    }
 	
 	   //TODO: experimental js function to stored procedure translator (func_name + src_hash) to perform a limited sort of distributed search on shards
+        protected static function renderWhere($clause, $link){
+            $where = Array();
+            foreach($clause as $discriminant){
+                if($discriminant['type']) switch($discriminant['type']){
+                    case 'expression':
+                        $value = $discriminant['value'];
+                        if (get_magic_quotes_gpc()) $value = stripslashes($value);
+                        $value = mysql_real_escape_string(''.$value);
+                        if((!is_numeric($value)) || $value == '') $value = '\''.$value.'\'';
+                        switch($discriminant['operator']){
+                            case '=':
+                                $where[] = '`'.$discriminant['key'].'` = '.$value;
+                                break;
+                            case '>':
+                                $where[] = '`'.$discriminant['key'].'` > '.$value;
+                                break;
+                            case '<':
+                                $where[] = '`'.$discriminant['key'].'` < '.$value;
+                                break;
+                            case '>=':
+                                $where[] = '`'.$discriminant['key'].'` >= '.$value;
+                                break;
+                            case '<=':
+                                $where[] = '`'.$discriminant['key'].'` <= '.$value;
+                                break;
+                            case '!=':
+                            case '<>':
+                                $where[] = '`'.$discriminant['key'].'` <> '.$value;
+                                break;
+                        }
+                        break;
+                    case 'conjunction':
+                        $where[] = $discriminant['value'];
+                        break;
+                }else{
+                    $where[] = '('.renderWhere($discriminant).')';
+                }
+            }
+            return implode(' ', $where);
+        }
+	   
         protected static function performSearch($subject, $predicate, $db, $returnFields=array()){
             if(is_string($returnFields)) $returnFields = explode(',', $returnFields);
 			$object = $subject['object'];
             $dummyObject = new $subject['object'];
+            $link = Data::$registry[$dummyObject->database];
 			$tableName = $dummyObject->tableName;
             $primary_key = $dummyObject->primaryKey;
+            $where = MySQLData::renderWhere($predicate, $link);
             try{
-                $discriminants = $predicate;
-                $discText = array();
-                foreach($discriminants as $discriminant){
-					$key = $discriminant[0];
-					if(!in_array($key, $dummyObject::$fields) && ! MySQLData::isMetaField($key)) continue;
-					$value = $discriminant[2];
-					if(is_string($value) && (substr($discriminant[2], 0, 1) != '\'' && substr($discriminant[2], strlen($discriminant[2])-1, 1) != '\'')){
-					   $value = "'$value'";
-					}
-                    $discText[] = $key.' '.trim($discriminant[1]).' '.$value;
-                }
-				$whereClause = implode(' and ', $discText);
-				$sql = MySQLData::buildSelectionStatement( $tableName, $whereClause, $returnFields);
-                $res = MySQLData::executeSQL($sql, null, $db);
+				$sql = MySQLData::buildSelectionStatement( $tableName, $where, $returnFields);
+                $res = MySQLData::executeSQL($sql, $dummyObject, $db);
 				foreach($res as $row){
 	                $results[] = $row;	
 				}
@@ -188,7 +218,7 @@
         }
         
         public static function initializeType($type, $object){
-            $fields = array_merge(Data::$core_fields, $object->fields);
+            $fields = array_merge(Data::$core_fields, $object::$fields);
             $statement = 'CREATE TABLE '.$type." (\n";
             foreach($fields as $index=>$field){
                 $statement .= $object->SQLType($field, $object->getFieldOptions($field, $object), $object).
@@ -397,7 +427,7 @@
 	        try{
 	            $results = array();
 	            if(! ( $SQLResult = mysql_query( $statement, $database ) ) ) {
-	                throw new Exception("SQL Error:" . mysql_error(MySQLData::$db));
+	                throw new Exception("SQL Error:" . mysql_error(MySQLData::$db).'[FULL TEXT:'.$statement.']');
 	            }
 	            MySQLData::$affected_rows = mysql_affected_rows( MySQLData::$db );
 	            if($SQLResult === true){
