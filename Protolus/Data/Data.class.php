@@ -1,5 +1,5 @@
 <?php
-    class WhereParser{
+class WhereParser{
     public function parse($query){
         return $this->parse_where($query);
     }
@@ -148,6 +148,41 @@
     }
     
     protected function parse_compound_phrase($clause){
+        $sentinels = array('and', 'or', '&&', '||');
+        $textEscape = array('\'');
+        $inText = false;
+        $escape = '';
+        $current = '';
+        $results = Array('');
+        for($lcv = 0; $lcv < strlen($clause); $lcv++){
+            $ch = $clause[$lcv];
+            //echo();
+            if($inText){
+                $results[count($results)-1] .= $current.$ch;
+                $current = '';
+                if($ch == $escape){
+                    $inText = false;
+                }
+            }else{
+                if(in_array($ch, $textEscape)){
+                    $inText = true;
+                    $escape = $ch;
+                }
+                if($ch != ' '){
+                    $current .= $ch;
+                    if(in_array(strtolower($current), $sentinels)){
+                        array_push($results, $current);
+                        array_push($results, '');
+                        $current = '';
+                    }
+                }else{
+                    $results[count($results)-1] .= $current;
+                    $current = '';
+                }
+            }
+        }
+        return $results;
+        /*
         $parts = preg_split('/(?= [Aa][Nn][Dd] ?| [Oo][Rr] ?|\|\||&&)/', $clause);
         $results = array();
         foreach($parts as $part){
@@ -158,7 +193,7 @@
             else $results[$key] = trim($results[$key]);
         }
         return array_values($results);
-        
+        */
     }
 }
 
