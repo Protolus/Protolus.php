@@ -127,7 +127,7 @@
                         $where[] = $discriminant['value'];
                         break;
                 }else{
-                    $where[] = '('.renderWhere($discriminant).')';
+                    $where[] = '('.MySQLData::renderWhere($discriminant).')';
                 }
             }
             return implode(' ', $where);

@@ -160,6 +160,7 @@
                     }
                 } else {
                     //throw new Exception('Something is wrong, the object has no primary key('.$this->primaryKey.')!');
+                    $query  = array();
                 }
                 $fieldsToUpdate = $this->data;
                 if(!$this->firstSave){
