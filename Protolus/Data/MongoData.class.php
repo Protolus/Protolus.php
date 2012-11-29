@@ -170,19 +170,11 @@
                 $class = get_class($this);
                 $type = $class::$name;
                 $collection = $db->$type;
-                MongoData::$lastQuery = '$collection->update(
-                    '.print_r($query, true).'
-                    array(\'$set\' => '.print_r($fieldsToUpdate, true).'),
-                    array(\'upsert\' => true, \'fsync\' => true, \'safe\' => true)
-                );';
-                //Logger::log(MongoData::$lastQuery);
-                $res = $collection->update(
-                    $query,
-                    array('$set' => $fieldsToUpdate),
-                    array('upsert' => true,'fsync' => true, 'safe' => true)
-                );
+                MongoData::$lastQuery = '$collection->save('+print_r($fieldsToUpdate, true)+');';
+                $res = $collection->save($fieldsToUpdate);
+                $this->data[$this->primaryKey] = $fieldsToUpdate[$this->primaryKey];
                 //$db->lastError();
-                return $query[$this->primaryKey];
+                return $fieldsToUpdate[$this->primaryKey];
             }catch(Exception $ex){
                 echo '<PRE>' . __FILE__ . '>' . __LINE__ . ' ' . ' Error!('.MongoData::$lastQuery.'):'. print_r($ex->getMessage(),true).'</PRE><br/>';
             }

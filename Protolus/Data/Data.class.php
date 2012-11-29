@@ -582,9 +582,9 @@ class WhereParser{
         
         public function save(){
             $this->checkInitialization();
-            $res = $this->performSave();
+            $result = $this->performSave();
             $this->isNew = false;
-            return $res;
+            return $result;
         }
         
         public function increment($key, $amount=1){
@@ -641,7 +641,7 @@ class WhereParser{
                 }
             }
             $thisPart = array_pop($parts);
-            if($value == null){
+            if($value === null){
                 unset($current[$thisPart]);
             }else{
                 $current[$thisPart] = $value;
